@@ -38,9 +38,14 @@
   .masthead {
     background: var(--ink);
     color: var(--bg);
-    padding: 3rem 2.5rem 2.5rem;
+    padding: 3rem 0 2.5rem;
     position: relative;
     overflow: hidden;
+  }
+  .masthead-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2.5rem;
   }
   .masthead::before {
     content: '';
@@ -106,7 +111,7 @@
   }
 
   /* MAIN */
-  .main { padding: 2rem 2.5rem 4rem; max-width: 960px; }
+  .main { padding: 2rem 2.5rem 4rem; max-width: 1200px; margin: 0 auto; }
 
   /* SECTION HEADER */
   .section-head {
@@ -225,6 +230,7 @@
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    min-width: 0;
   }
   .day-name {
     font-family: var(--font-mono);
@@ -256,10 +262,29 @@
     font-style: italic;
     line-height: 1.5;
     grid-column: 1 / -1;
+    cursor: pointer;
   }
+  .week-note:hover { background: var(--bg2); }
   .week-note::before {
     content: '→ ';
     color: var(--ink3);
+  }
+  .week-note-edit {
+    display: block;
+    width: 100%;
+    padding: 8px 14px 10px;
+    border: none;
+    border-top: 2px solid var(--accent2);
+    background: var(--bg);
+    font-size: 12px;
+    color: var(--ink2);
+    font-style: italic;
+    font-family: var(--font-display);
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    min-height: 44px;
+    box-sizing: border-box;
   }
 
   /* TABLES */
@@ -454,14 +479,16 @@
     font-family: var(--font-mono); font-size: 10px; color: var(--ink3);
     text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px;
   }
-  .modal-body input, .modal-body select {
+  .modal-body input, .modal-body select, .modal-body textarea {
     width: 100%; padding: 7px 10px;
     border: 1px solid var(--border); border-radius: 3px;
     background: var(--bg2); color: var(--ink);
     font-family: var(--font-display); font-size: 13px;
     outline: none; box-sizing: border-box;
   }
-  .modal-body input:focus, .modal-body select:focus { border-color: var(--accent2); }
+  .modal-body textarea { resize: vertical; min-height: 64px; font-style: italic; }
+  .modal-body input:focus, .modal-body select:focus, .modal-body textarea:focus { border-color: var(--accent2); }
+  .modal-body input:disabled { opacity: 0.4; cursor: not-allowed; }
   .modal-footer {
     padding: 12px 18px 14px; border-top: 1px solid var(--border2);
     display: flex; gap: 8px; justify-content: flex-end;
@@ -617,6 +644,7 @@
 <body>
 
 <div class="masthead">
+  <div class="masthead-inner">
   <div class="masthead-eyebrow">Plan de préparation cyclosportive</div>
   <h1 class="masthead-title">L'Ariégeoise <span>2026</span></h1>
   <div class="masthead-sub">Format 180 km · 4 000 m D+ · Fin juin 2026</div>
@@ -645,6 +673,7 @@
       <div class="mstat-val">10 sem.</div>
       <div class="mstat-label">Préparation</div>
     </div>
+  </div>
   </div>
 </div>
 
@@ -819,14 +848,14 @@
       <label>Nom de la séance</label>
       <input id="m-name" type="text" placeholder="ex: Col Z3">
       <label>Type</label>
-      <select id="m-type">
+      <select id="m-type" onchange="onZoneChange()">
         <option>Endurance</option><option>Col</option><option>HT Endurance</option>
         <option>HT Tempo</option><option>HT Col</option><option>Test</option>
         <option>Récupération</option><option>Repos</option><option>Activation</option>
         <option>Voyage</option><option>Événement</option>
       </select>
       <label>Zone d'intensité</label>
-      <select id="m-zone">
+      <select id="m-zone" onchange="onZoneChange()">
         <option value="Repos">Repos</option>
         <option value="Z1">Z1 — Récupération active</option>
         <option value="Z2">Z2 — Endurance fond</option>
@@ -836,6 +865,8 @@
       </select>
       <label>Durée (minutes)</label>
       <input id="m-dur" type="number" min="0" max="720" step="15">
+      <label>Compte-rendu / notes</label>
+      <textarea id="m-desc" placeholder="Notes après la séance…"></textarea>
     </div>
     <div class="modal-footer">
       <button class="btn" onclick="closeModal()">Annuler</button>
@@ -874,7 +905,7 @@ function sessionColor(type, zone) {
 
 const INITIAL_WEEKS = [
   {
-    num:1, label:"S1", dates:"24–30 avr", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
+    num:1, label:"S1", dates:"20–26 avr", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
     note:"Arrivée en Pyrénées le 24. Profite du D+ max dès le lendemain. Accumule les montées, reste en Z1/Z2 le matin, permets-toi du Z3 sur les cols.",
     days:[
       {n:"Lu",l:"Arrivée/Z1",t:"Voyage",    dur:60,  z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -887,7 +918,7 @@ const INITIAL_WEEKS = [
     ]
   },
   {
-    num:2, label:"S2", dates:"1–7 mai", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
+    num:2, label:"S2", dates:"27 avr–3 mai", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
     note:"Semaine de charge en montagne. La longue du samedi peut simuler des cols enchaînés. Dernier jour en Pyrénées : 7 mai.",
     days:[
       {n:"Lu",l:"Z2 fond",      t:"Endurance",  dur:120, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
@@ -900,7 +931,7 @@ const INITIAL_WEEKS = [
     ]
   },
   {
-    num:3, label:"S3", dates:"8–14 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
+    num:3, label:"S3", dates:"4–10 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
     note:"Retour à Paris. HT en semaine pour maintenir la condition. Première sortie longue test le week-end.",
     days:[
       {n:"Lu",l:"Repos",       t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -913,7 +944,7 @@ const INITIAL_WEEKS = [
     ]
   },
   {
-    num:4, label:"S4", dates:"15–21 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
+    num:4, label:"S4", dates:"11–17 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
     note:"Semaine normale à Vincennes. Charge modérée, focus sur la qualité des séances HT.",
     days:[
       {n:"Lu",l:"Repos",       t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -926,7 +957,7 @@ const INITIAL_WEEKS = [
     ]
   },
   {
-    num:5, label:"S5", dates:"22–28 mai", phase:"Ventoux ⛰", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"~15 h",
+    num:5, label:"S5", dates:"18–24 mai", phase:"Ventoux ⛰", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"~15 h",
     note:"Route le 22. Vélo les 23, 24 et 25 — gère l'allure sur la première montée pour enchaîner les ascensions. Repos le 26, récup douce en fin de semaine.",
     days:[
       {n:"Lu",l:"Route Ventoux",t:"Voyage",      dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -939,7 +970,7 @@ const INITIAL_WEEKS = [
     ]
   },
   {
-    num:6, label:"S6", dates:"29 mai–4 juin", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
+    num:6, label:"S6", dates:"25–31 mai", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
     note:"Montée en charge progressive. Les sorties longues sont le cœur de cette phase.",
     days:[
       {n:"Lu",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -952,7 +983,7 @@ const INITIAL_WEEKS = [
     ]
   },
   {
-    num:7, label:"S7", dates:"5–11 juin", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
+    num:7, label:"S7", dates:"1–7 juin", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
     note:"Charge maximale de la préparation. La longue du samedi peut aller jusqu'à 6–7h.",
     days:[
       {n:"Lu",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -965,7 +996,7 @@ const INITIAL_WEEKS = [
     ]
   },
   {
-    num:8, label:"S8", dates:"12–18 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
+    num:8, label:"S8", dates:"8–14 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
     note:"Début de la réduction de volume. Maintien de quelques pics d'intensité, récupération prioritaire.",
     days:[
       {n:"Lu",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -978,7 +1009,7 @@ const INITIAL_WEEKS = [
     ]
   },
   {
-    num:9, label:"S9", dates:"19–25 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
+    num:9, label:"S9", dates:"15–21 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
     note:"Volume bas, intensité maîtrisée. Soigner alimentation, sommeil, et préparer le matériel.",
     days:[
       {n:"Lu",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -991,7 +1022,7 @@ const INITIAL_WEEKS = [
     ]
   },
   {
-    num:10, label:"S10", dates:"23–28 juin", phase:"Race week 🏁", pc:"#D4522A", pb:"rgba(212,82,42,0.15)", vol:"4–5 h",
+    num:10, label:"S10", dates:"22–28 juin", phase:"Race week 🏁", pc:"#D4522A", pb:"rgba(212,82,42,0.15)", vol:"4–5 h",
     note:"Activations courtes uniquement. Dormir, manger, vérifier le vélo. La forme est acquise — confiance.",
     days:[
       {n:"Lu",l:"Repos",       t:"Repos",    dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -1011,12 +1042,18 @@ function initState() {
     const s = localStorage.getItem('ariegeoise-v2');
     if (s) {
       const p = JSON.parse(s);
-      p.weeks.forEach(w => w.days.forEach(d => { if (d.done===undefined) d.done=false; }));
+      p.weeks.forEach((w, i) => {
+        if (INITIAL_WEEKS[i]) w.dates = INITIAL_WEEKS[i].dates;
+        w.days.forEach(d => {
+          if (d.done===undefined) d.done=false;
+          if (d.desc===undefined) d.desc='';
+        });
+      });
       return p;
     }
   } catch(e) {}
   const w = JSON.parse(JSON.stringify(INITIAL_WEEKS));
-  w.forEach(wk => wk.days.forEach(d => { d.done=false; }));
+  w.forEach(wk => wk.days.forEach(d => { d.done=false; d.desc=''; }));
   return { weeks: w };
 }
 let state = initState();
@@ -1059,7 +1096,9 @@ function openModal(wi, di) {
   document.getElementById('m-type').value = d.t;
   document.getElementById('m-zone').value = d.z;
   document.getElementById('m-dur').value  = d.dur;
+  document.getElementById('m-desc').value = d.desc||'';
   document.getElementById('modal').style.display = 'flex';
+  onZoneChange();
 }
 function closeModal() {
   document.getElementById('modal').style.display = 'none';
@@ -1075,6 +1114,7 @@ function saveSession() {
   d.l   = document.getElementById('m-name').value.trim() || d.l;
   d.t   = type; d.z = zone; d.dur = parseInt(document.getElementById('m-dur').value)||0;
   d.c   = col.c; d.b = col.b;
+  d.desc = document.getElementById('m-desc').value.trim();
   saveState(); closeModal(); render();
 }
 
@@ -1109,6 +1149,7 @@ function renderWeeks() {
           ondrop="onDrop(event,${wi},${di})">
         <div class="day-name">${d.n}</div>
         <div class="day-pill ${d.done?'done':''}" style="color:${d.c};background:${d.b}"
+             title="${d.desc?d.desc:''}"
              onclick="openModal(${wi},${di})">
           <span class="day-pill-name">${d.l}</span>${tl}
         </div>
@@ -1140,7 +1181,7 @@ function renderWeeks() {
         </div>
         <div class="week-days">${daysHtml}</div>
       </div>
-      <div class="week-note">${w.note}</div>`;
+      <div class="week-note" onclick="startEditNote(${wi}, this)">${w.note}</div>`;
     container.appendChild(div);
   });
 }
@@ -1210,6 +1251,28 @@ function renderAdaptations() {
       <div class="adapt-vals"><span>${dn.high} / ${pl.high} pts</span><span class="adapt-pct">${pct(dn.high,pl.high)}%</span></div>
     </div>`:''}
   </div>`;
+}
+
+// ── WEEK NOTE EDITING ──────────────────────────────────────────────────────
+function startEditNote(wi, el) {
+  const ta = document.createElement('textarea');
+  ta.className = 'week-note-edit';
+  ta.value = state.weeks[wi].note || '';
+  el.replaceWith(ta);
+  ta.focus();
+  ta.selectionStart = ta.selectionEnd = ta.value.length;
+  ta.addEventListener('blur', () => { state.weeks[wi].note = ta.value; saveState(); render(); });
+  ta.addEventListener('keydown', e => { if (e.key === 'Escape') render(); });
+}
+
+// ── ZONE CHANGE ────────────────────────────────────────────────────────────
+function onZoneChange() {
+  const zone = document.getElementById('m-zone').value;
+  const type = document.getElementById('m-type').value;
+  const durInput = document.getElementById('m-dur');
+  const isRest = zone === 'Repos' || type === 'Repos';
+  if (isRest) { durInput.value = 0; durInput.disabled = true; }
+  else { durInput.disabled = false; }
 }
 
 render();
