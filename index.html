@@ -461,15 +461,15 @@
       <div class="tp-name" style="color:#C07B18">Transition</div>
       <div class="tp-bar" style="background:#C07B18; opacity:0.5"></div>
     </div>
-    <div class="tphase" style="background:rgba(45,122,79,0.07)">
-      <div class="tp-weeks">S5–S6</div>
-      <div class="tp-name" style="color:#2D7A4F">Construction</div>
-      <div class="tp-bar" style="background:#2D7A4F; opacity:0.5"></div>
-    </div>
     <div class="tphase" style="background:rgba(91,75,168,0.07)">
-      <div class="tp-weeks">S7</div>
+      <div class="tp-weeks">S5</div>
       <div class="tp-name" style="color:#5B4BA8">Ventoux ⛰</div>
       <div class="tp-bar" style="background:#5B4BA8; opacity:0.5"></div>
+    </div>
+    <div class="tphase" style="background:rgba(45,122,79,0.07)">
+      <div class="tp-weeks">S6–S7</div>
+      <div class="tp-name" style="color:#2D7A4F">Construction</div>
+      <div class="tp-bar" style="background:#2D7A4F; opacity:0.5"></div>
     </div>
     <div class="tphase" style="background:rgba(212,82,42,0.07)">
       <div class="tp-weeks">S8–S9</div>
@@ -594,10 +594,10 @@
 <script>
 const weeks = [
   {
-    num:1, label:"S1", dates:"21–27 avr", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
-    note:"Profite du D+ max. Accumule les montées, reste en Z1/Z2 le matin, permets-toi du Z3 sur les cols.",
+    num:1, label:"S1", dates:"24–30 avr", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
+    note:"Arrivée en Pyrénées le 24. Profite du D+ max dès le lendemain. Accumule les montées, reste en Z1/Z2 le matin, permets-toi du Z3 sur les cols.",
     days:[
-      {n:"Lu",l:"Z2 fond",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Lu",l:"Arrivée/Z1",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
       {n:"Ma",l:"Col Z3",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
       {n:"Me",l:"Col Z3",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
       {n:"Je",l:"Récup",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -607,8 +607,8 @@ const weeks = [
     ]
   },
   {
-    num:2, label:"S2", dates:"28 avr–4 mai", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
-    note:"Semaine de charge en montagne. La longue du samedi peut simuler des cols enchaînés.",
+    num:2, label:"S2", dates:"1–7 mai", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
+    note:"Semaine de charge en montagne. La longue du samedi peut simuler des cols enchaînés. Dernier jour en Pyrénées : 7 mai.",
     days:[
       {n:"Lu",l:"Z2 fond",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
       {n:"Ma",l:"Col Z3",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
@@ -620,7 +620,7 @@ const weeks = [
     ]
   },
   {
-    num:3, label:"S3", dates:"5–11 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
+    num:3, label:"S3", dates:"8–14 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
     note:"Retour à Paris. HT en semaine pour maintenir la condition. Première sortie longue test le week-end.",
     days:[
       {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -633,7 +633,7 @@ const weeks = [
     ]
   },
   {
-    num:4, label:"S4", dates:"12–18 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
+    num:4, label:"S4", dates:"15–21 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
     note:"Semaine normale à Vincennes. Charge modérée, focus sur la qualité des séances HT.",
     days:[
       {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -646,7 +646,20 @@ const weeks = [
     ]
   },
   {
-    num:5, label:"S5", dates:"19–25 mai", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
+    num:5, label:"S5", dates:"22–28 mai", phase:"Ventoux ⛰", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"~15 h",
+    note:"Route le 22. Vélo les 23, 24 et 25 — gère l'allure sur la première montée pour enchaîner les ascensions. Repos le 26, récup douce en fin de semaine.",
+    days:[
+      {n:"Lu",l:"Route Ventoux",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ma",l:"Ventoux vélo",c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
+      {n:"Me",l:"Ventoux vélo",c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
+      {n:"Je",l:"Ventoux vélo",c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
+      {n:"Ve",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Sa",l:"Z1 retour",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Di",l:"Z1 récup",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+    ]
+  },
+  {
+    num:6, label:"S6", dates:"29 mai–4 juin", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
     note:"Montée en charge progressive. Les sorties longues sont le cœur de cette phase.",
     days:[
       {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -659,7 +672,7 @@ const weeks = [
     ]
   },
   {
-    num:6, label:"S6", dates:"26 mai–1 juin", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
+    num:7, label:"S7", dates:"5–11 juin", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
     note:"Charge maximale de la préparation. La longue du samedi peut aller jusqu'à 6–7h.",
     days:[
       {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -672,20 +685,7 @@ const weeks = [
     ]
   },
   {
-    num:7, label:"S7", dates:"2–8 juin", phase:"Ventoux ⛰", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"~15 h",
-    note:"Week-end Ventoux. Gère l'allure sur la première montée pour être encore capable de grimper sur la deuxième — exactement l'enjeu de l'Ariégeoise.",
-    days:[
-      {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"HT léger 60'",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Me",l:"HT endur 90'",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Je",l:"Récup",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ve",l:"Route Ventoux",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Sa",l:"Ventoux x1–2",c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
-      {n:"Di",l:"Ventoux opt.",c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
-    ]
-  },
-  {
-    num:8, label:"S8", dates:"9–15 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
+    num:8, label:"S8", dates:"12–18 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
     note:"Début de la réduction de volume. Maintien de quelques pics d'intensité, récupération prioritaire.",
     days:[
       {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -698,7 +698,7 @@ const weeks = [
     ]
   },
   {
-    num:9, label:"S9", dates:"16–22 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
+    num:9, label:"S9", dates:"19–25 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
     note:"Volume bas, intensité maîtrisée. Soigner alimentation, sommeil, et préparer le matériel.",
     days:[
       {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
