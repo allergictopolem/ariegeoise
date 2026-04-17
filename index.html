@@ -507,6 +507,44 @@
   .adapt-vals { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10px; color:var(--ink2); }
   .adapt-pct { font-weight:500; }
 
+  /* GLOBAL STATS BAR */
+  .global-stat-bar {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 10px 16px;
+    margin-bottom: 1rem;
+  }
+  .gsb-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 6px;
+  }
+  .gsb-done {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--green);
+  }
+  .gsb-total {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink3);
+  }
+  .gsb-track {
+    height: 5px;
+    background: var(--bg3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .gsb-fill {
+    height: 100%;
+    background: var(--green);
+    border-radius: 3px;
+    transition: width 0.4s;
+  }
+
   /* CHART DONE OVERLAY */
   .chart-bars { position: relative; gap: 0; }
   .chart-done { position:absolute; bottom:0; left:0; right:0; border-radius:2px 2px 0 0; opacity:0.82; }
@@ -726,6 +764,7 @@
 
   <!-- WEEKS -->
   <div class="section-head"><h2>Programme semaine par semaine</h2></div>
+  <div id="global-stats"></div>
   <div class="weeks" id="weeks"></div>
 
   <!-- LOAD CHART -->
@@ -885,6 +924,14 @@ const ZONE_COLORS = {
   Z4:   {c:"#D4522A",b:"rgba(212,82,42,0.12)"},
   Mixed:{c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
 };
+
+function formatDur(min) {
+  if (!min) return '0h';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
+}
+function sumDurDays(days) { return days.reduce((a,d) => a + (d.dur||0), 0); }
 
 function calcLoad(dur, zone) {
   const h = dur/60, total = Math.round(h*(LOAD_FACTORS[zone]||0));
@@ -1127,7 +1174,25 @@ function resetState() {
 }
 
 // ── RENDER ─────────────────────────────────────────────────────────────────
-function render() { renderWeeks(); renderChart(); renderAdaptations(); }
+function render() { renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); }
+
+function renderGlobalStats() {
+  const el = document.getElementById('global-stats');
+  if (!el) return;
+  let totalMin = 0, doneMin = 0;
+  state.weeks.forEach(w => w.days.forEach(d => {
+    totalMin += d.dur||0;
+    if (d.done) doneMin += d.dur||0;
+  }));
+  const pct = totalMin > 0 ? Math.round(doneMin / totalMin * 100) : 0;
+  el.innerHTML = `<div class="global-stat-bar">
+    <div class="gsb-labels">
+      <span class="gsb-done">${formatDur(doneMin)} accomplis</span>
+      <span class="gsb-total">sur ${formatDur(totalMin)} prévus · ${pct}%</span>
+    </div>
+    <div class="gsb-track"><div class="gsb-fill" style="width:${pct}%"></div></div>
+  </div>`;
+}
 
 function renderWeeks() {
   const container = document.getElementById('weeks');
@@ -1166,7 +1231,7 @@ function renderWeeks() {
           <div class="week-num">Semaine ${w.num}</div>
           <div class="week-dates">${w.dates}</div>
           <div class="week-phase" style="color:${w.pc};background:${w.pb}">${w.phase}</div>
-          <div class="week-volume">${w.vol}</div>
+          <div class="week-volume">${formatDur(sumDurDays(w.days))}</div>
           <div class="week-load">
             <div class="wl-header">
               <span class="wl-label">Charge</span>
