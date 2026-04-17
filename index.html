@@ -397,6 +397,93 @@
     gap: 8px;
   }
 
+  /* DAY COL INTERACTIVE */
+  .day-col { position: relative; cursor: pointer; }
+  .day-col:hover .day-pill { filter: brightness(0.95); }
+  .day-col.dragging { opacity: 0.3; }
+  .day-col.drag-over .day-pill { outline: 2px dashed var(--accent2); outline-offset: 1px; }
+
+  /* DONE PILL */
+  .day-pill.done { opacity: 0.45; }
+  .day-pill.done .day-pill-name { text-decoration: line-through; }
+
+  /* DONE BUTTON */
+  .done-btn {
+    width: 100%;
+    height: 13px;
+    border-radius: 2px;
+    border: 1px solid var(--border2);
+    background: var(--bg);
+    font-size: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.12s;
+    margin-top: -2px;
+  }
+  .done-btn:hover { border-color: var(--green); color: var(--green); }
+  .done-btn.checked { background: rgba(45,122,79,0.13); border-color: var(--green); color: var(--green); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(26,25,23,0.55);
+    z-index: 200;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    width: min(400px, 92vw);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+  }
+  .modal-header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--border2);
+  }
+  .modal-title { font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
+  .modal-close { background:none; border:none; font-size:20px; cursor:pointer; color:var(--ink3); line-height:1; padding:0; }
+  .modal-body { padding: 14px 18px; display: flex; flex-direction: column; gap: 4px; }
+  .modal-body label {
+    font-family: var(--font-mono); font-size: 10px; color: var(--ink3);
+    text-transform: uppercase; letter-spacing: 0.08em; margin-top: 6px;
+  }
+  .modal-body input, .modal-body select {
+    width: 100%; padding: 7px 10px;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: var(--bg2); color: var(--ink);
+    font-family: var(--font-display); font-size: 13px;
+    outline: none; box-sizing: border-box;
+  }
+  .modal-body input:focus, .modal-body select:focus { border-color: var(--accent2); }
+  .modal-footer {
+    padding: 12px 18px 14px; border-top: 1px solid var(--border2);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+  .btn { padding:7px 14px; border-radius:3px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--border); background:var(--bg2); color:var(--ink); }
+  .btn:hover { background: var(--bg3); }
+  .btn-primary { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .btn-primary:hover { background: #2a2927; }
+
+  /* ADAPTATIONS */
+  .adapt-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:10px; margin-top:0.5rem; }
+  .adapt-card { background:var(--bg2); border:1px solid var(--border2); border-radius:4px; padding:12px 14px; }
+  .adapt-label { font-family:var(--font-mono); font-size:9px; color:var(--ink3); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:8px; }
+  .adapt-bar-wrap { height:5px; background:var(--bg3); border-radius:3px; overflow:hidden; margin-bottom:5px; }
+  .adapt-bar-fill { height:100%; border-radius:3px; transition:width 0.5s; }
+  .adapt-vals { display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10px; color:var(--ink2); }
+  .adapt-pct { font-weight:500; }
+
+  /* CHART DONE OVERLAY */
+  .chart-bars { position: relative; gap: 0; }
+  .chart-done { position:absolute; bottom:0; left:0; right:0; border-radius:2px 2px 0 0; opacity:0.82; }
+
   /* SESSION TYPE */
   .day-pill { white-space: normal; }
   .day-pill-name {
@@ -616,12 +703,16 @@
   <div class="section-head" style="margin-top:2rem"><h2>Progression de la charge</h2></div>
   <div class="chart-section">
     <div class="chart-legend">
-      <div class="cl-item"><div class="cl-dot" style="background:#1D5FA8;opacity:0.7"></div>Z1/Z2 Base</div>
-      <div class="cl-item"><div class="cl-dot" style="background:#C07B18;opacity:0.8"></div>Z3/Mixte Seuil</div>
-      <div class="cl-item"><div class="cl-dot" style="background:#D4522A"></div>Z4 Haute intensité</div>
+      <div class="cl-item"><div class="cl-dot" style="background:#1D5FA8;opacity:0.22"></div>Z1/Z2 prévu</div>
+      <div class="cl-item"><div class="cl-dot" style="background:#C07B18;opacity:0.22"></div>Z3/Mixte prévu</div>
+      <div class="cl-item"><div class="cl-dot" style="background:var(--ink2)"></div>Accompli (couleur de phase)</div>
     </div>
     <div class="load-chart" id="load-chart"></div>
   </div>
+
+  <!-- ADAPTATIONS -->
+  <div class="section-head" style="margin-top:2rem"><h2>Adaptations acquises</h2></div>
+  <div id="adaptations"></div>
 
   <!-- INTENSITY TABLE -->
   <div class="section-head" style="margin-top:2rem"><h2>Répartition par phase</h2></div>
@@ -714,22 +805,74 @@
   <div class="footer">
     <span>Ariégeoise 2026 — Plan généré en avril 2026</span>
     <span>Vincennes → Pyrénées → Ventoux → Ariège</span>
+    <button onclick="resetState()" style="background:none;border:none;font-family:var(--font-mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;text-decoration:underline;padding:0">Réinitialiser</button>
+  </div>
+</div>
+
+<div id="modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Modifier la séance</span>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <label>Nom de la séance</label>
+      <input id="m-name" type="text" placeholder="ex: Col Z3">
+      <label>Type</label>
+      <select id="m-type">
+        <option>Endurance</option><option>Col</option><option>HT Endurance</option>
+        <option>HT Tempo</option><option>HT Col</option><option>Test</option>
+        <option>Récupération</option><option>Repos</option><option>Activation</option>
+        <option>Voyage</option><option>Événement</option>
+      </select>
+      <label>Zone d'intensité</label>
+      <select id="m-zone">
+        <option value="Repos">Repos</option>
+        <option value="Z1">Z1 — Récupération active</option>
+        <option value="Z2">Z2 — Endurance fond</option>
+        <option value="Z3">Z3 — Tempo / Col</option>
+        <option value="Z4">Z4 — Seuil</option>
+        <option value="Mixed">Mixte — Sortie longue</option>
+      </select>
+      <label>Durée (minutes)</label>
+      <input id="m-dur" type="number" min="0" max="720" step="15">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveSession()">Enregistrer</button>
+    </div>
   </div>
 </div>
 
 <script>
-const LOAD_FACTORS = { Z1: 30, Z2: 50, Z3: 75, Z4: 100, Mixed: 60, Repos: 0 };
+const LOAD_FACTORS = { Z1:30, Z2:50, Z3:75, Z4:100, Mixed:60, Repos:0 };
+const ZONE_COLORS = {
+  Repos:{c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+  Z1:   {c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+  Z2:   {c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+  Z3:   {c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+  Z4:   {c:"#D4522A",b:"rgba(212,82,42,0.12)"},
+  Mixed:{c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
+};
 
 function calcLoad(dur, zone) {
-  const h = dur / 60;
-  const total = Math.round(h * (LOAD_FACTORS[zone] || 0));
-  const base      = (zone === 'Z1' || zone === 'Z2') ? total : 0;
-  const threshold = (zone === 'Z3' || zone === 'Mixed') ? total : 0;
-  const high      = (zone === 'Z4') ? total : 0;
-  return { base, threshold, high, total };
+  const h = dur/60, total = Math.round(h*(LOAD_FACTORS[zone]||0));
+  return {
+    base:      (zone==='Z1'||zone==='Z2') ? total : 0,
+    threshold: (zone==='Z3'||zone==='Mixed') ? total : 0,
+    high:       zone==='Z4' ? total : 0,
+    total
+  };
+}
+function sumLoad(days) {
+  return days.reduce((a,d)=>{const l=calcLoad(d.dur,d.z);return{base:a.base+l.base,threshold:a.threshold+l.threshold,high:a.high+l.high,total:a.total+l.total};},{base:0,threshold:0,high:0,total:0});
+}
+function sessionColor(type, zone) {
+  if (type==='Événement') return {c:"#5B4BA8",b:"rgba(91,75,168,0.12)"};
+  return ZONE_COLORS[zone]||ZONE_COLORS.Repos;
 }
 
-const weeks = [
+const INITIAL_WEEKS = [
   {
     num:1, label:"S1", dates:"24–30 avr", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
     note:"Arrivée en Pyrénées le 24. Profite du D+ max dès le lendemain. Accumule les montées, reste en Z1/Z2 le matin, permets-toi du Z3 sur les cols.",
@@ -862,88 +1005,214 @@ const weeks = [
   },
 ];
 
-const container = document.getElementById('weeks');
+// ── STATE ──────────────────────────────────────────────────────────────────
+function initState() {
+  try {
+    const s = localStorage.getItem('ariegeoise-v2');
+    if (s) {
+      const p = JSON.parse(s);
+      p.weeks.forEach(w => w.days.forEach(d => { if (d.done===undefined) d.done=false; }));
+      return p;
+    }
+  } catch(e) {}
+  const w = JSON.parse(JSON.stringify(INITIAL_WEEKS));
+  w.forEach(wk => wk.days.forEach(d => { d.done=false; }));
+  return { weeks: w };
+}
+let state = initState();
+function saveState() { localStorage.setItem('ariegeoise-v2', JSON.stringify(state)); }
 
-weeks.forEach(w => {
-  const wl = w.days.reduce((acc, d) => {
-    const l = calcLoad(d.dur, d.z);
-    return { base: acc.base+l.base, threshold: acc.threshold+l.threshold, high: acc.high+l.high, total: acc.total+l.total };
-  }, { base:0, threshold:0, high:0, total:0 });
+// ── DRAG & DROP ────────────────────────────────────────────────────────────
+let dragSrc = null;
+function onDragStart(e, wi, di) {
+  dragSrc = {wi, di};
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
+}
+function onDragEnd(e)    { e.currentTarget.classList.remove('dragging'); }
+function onDragOver(e)   { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function onDragLeave(e)  { e.currentTarget.classList.remove('drag-over'); }
+function onDrop(e, wi, di) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!dragSrc || (dragSrc.wi===wi && dragSrc.di===di)) { dragSrc=null; return; }
+  const s = state.weeks[dragSrc.wi].days[dragSrc.di];
+  const d = state.weeks[wi].days[di];
+  ['l','t','dur','z','c','b','done'].forEach(f => { [s[f],d[f]]=[d[f],s[f]]; });
+  dragSrc = null;
+  saveState(); render();
+}
 
-  const t = wl.total || 1;
-  const basePct      = Math.round(wl.base / t * 100);
-  const thresholdPct = Math.round(wl.threshold / t * 100);
-  const highPct      = Math.round(wl.high / t * 100);
+// ── DONE TOGGLE ────────────────────────────────────────────────────────────
+function toggleDone(e, wi, di) {
+  e.stopPropagation();
+  state.weeks[wi].days[di].done = !state.weeks[wi].days[di].done;
+  saveState(); render();
+}
 
-  const daysHtml = w.days.map(d => {
-    const typeLabel = (d.t !== 'Repos' && d.t !== 'Voyage')
-      ? `<span class="day-type">${d.t}</span>` : '';
-    return `
-      <div class="day-col">
+// ── MODAL ──────────────────────────────────────────────────────────────────
+let editTarget = null;
+function openModal(wi, di) {
+  editTarget = {wi, di};
+  const d = state.weeks[wi].days[di];
+  document.getElementById('m-name').value = d.l;
+  document.getElementById('m-type').value = d.t;
+  document.getElementById('m-zone').value = d.z;
+  document.getElementById('m-dur').value  = d.dur;
+  document.getElementById('modal').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modal').style.display = 'none';
+  editTarget = null;
+}
+function saveSession() {
+  if (!editTarget) return;
+  const {wi, di} = editTarget;
+  const d = state.weeks[wi].days[di];
+  const type = document.getElementById('m-type').value;
+  const zone = document.getElementById('m-zone').value;
+  const col  = sessionColor(type, zone);
+  d.l   = document.getElementById('m-name').value.trim() || d.l;
+  d.t   = type; d.z = zone; d.dur = parseInt(document.getElementById('m-dur').value)||0;
+  d.c   = col.c; d.b = col.b;
+  saveState(); closeModal(); render();
+}
+
+// ── RESET ──────────────────────────────────────────────────────────────────
+function resetState() {
+  if (!confirm('Réinitialiser le programme ? Toutes les modifications et coches seront perdues.')) return;
+  localStorage.removeItem('ariegeoise-v2');
+  state = initState();
+  render();
+}
+
+// ── RENDER ─────────────────────────────────────────────────────────────────
+function render() { renderWeeks(); renderChart(); renderAdaptations(); }
+
+function renderWeeks() {
+  const container = document.getElementById('weeks');
+  container.innerHTML = '';
+  state.weeks.forEach((w, wi) => {
+    const pl = sumLoad(w.days);
+    const dn = sumLoad(w.days.filter(d => d.done));
+    const t  = pl.total||1;
+    const bPct = Math.round(pl.base/t*100);
+    const tPct = Math.round(pl.threshold/t*100);
+    const hPct = Math.round(pl.high/t*100);
+    const dPct = pl.total>0 ? Math.round(dn.total/pl.total*100) : 0;
+
+    const daysHtml = w.days.map((d, di) => {
+      const tl = (d.t!=='Repos'&&d.t!=='Voyage') ? `<span class="day-type">${d.t}</span>` : '';
+      return `<div class="day-col" draggable="true"
+          ondragstart="onDragStart(event,${wi},${di})" ondragend="onDragEnd(event)"
+          ondragover="onDragOver(event)" ondragleave="onDragLeave(event)"
+          ondrop="onDrop(event,${wi},${di})">
         <div class="day-name">${d.n}</div>
-        <div class="day-pill" style="color:${d.c};background:${d.b}">
-          <span class="day-pill-name">${d.l}</span>${typeLabel}
+        <div class="day-pill ${d.done?'done':''}" style="color:${d.c};background:${d.b}"
+             onclick="openModal(${wi},${di})">
+          <span class="day-pill-name">${d.l}</span>${tl}
         </div>
+        <button class="done-btn ${d.done?'checked':''}"
+                onclick="toggleDone(event,${wi},${di})">✓</button>
       </div>`;
-  }).join('');
+    }).join('');
 
-  const div = document.createElement('div');
-  div.className = 'week';
-  div.innerHTML = `
-    <div class="week-top">
-      <div class="week-meta">
-        <div class="week-num">Semaine ${w.num}</div>
-        <div class="week-dates">${w.dates}</div>
-        <div class="week-phase" style="color:${w.pc};background:${w.pb}">${w.phase}</div>
-        <div class="week-volume">${w.vol}</div>
-        <div class="week-load">
-          <div class="wl-header">
-            <span class="wl-label">Charge</span>
-            <span class="wl-val">${wl.total} pts</span>
-          </div>
-          <div class="wl-bar">
-            <div class="wl-base"     style="width:${basePct}%"></div>
-            <div class="wl-thresh"   style="width:${thresholdPct}%"></div>
-            <div class="wl-high"     style="width:${highPct}%"></div>
+    const div = document.createElement('div');
+    div.className = 'week';
+    div.innerHTML = `
+      <div class="week-top">
+        <div class="week-meta">
+          <div class="week-num">Semaine ${w.num}</div>
+          <div class="week-dates">${w.dates}</div>
+          <div class="week-phase" style="color:${w.pc};background:${w.pb}">${w.phase}</div>
+          <div class="week-volume">${w.vol}</div>
+          <div class="week-load">
+            <div class="wl-header">
+              <span class="wl-label">Charge</span>
+              <span class="wl-val">${pl.total} pts${dPct>0?` · <span style="color:var(--green)">${dPct}%✓</span>`:''}</span>
+            </div>
+            <div class="wl-bar">
+              <div class="wl-base"   style="width:${bPct}%"></div>
+              <div class="wl-thresh" style="width:${tPct}%"></div>
+              <div class="wl-high"   style="width:${hPct}%"></div>
+            </div>
           </div>
         </div>
+        <div class="week-days">${daysHtml}</div>
       </div>
-      <div class="week-days">${daysHtml}</div>
-    </div>
-    <div class="week-note">${w.note}</div>`;
-  container.appendChild(div);
-});
+      <div class="week-note">${w.note}</div>`;
+    container.appendChild(div);
+  });
+}
 
-// LOAD CHART
-const chartEl = document.getElementById('load-chart');
-const allLoads = weeks.map(w => ({
-  label: w.label,
-  pc: w.pc,
-  ...w.days.reduce((acc, d) => {
+function renderChart() {
+  const chartEl = document.getElementById('load-chart');
+  if (!chartEl) return;
+  chartEl.innerHTML = '';
+  const H = 80;
+  const data = state.weeks.map(w => ({
+    label: w.label, pc: w.pc,
+    planned: sumLoad(w.days),
+    done:    sumLoad(w.days.filter(d => d.done)),
+  }));
+  const maxLoad = Math.max(...data.map(d => d.planned.total), 1);
+  data.forEach(d => {
+    const bH = Math.round(d.planned.base/maxLoad*H);
+    const tH = Math.round(d.planned.threshold/maxLoad*H);
+    const hH = Math.round(d.planned.high/maxLoad*H);
+    const dH = d.planned.total>0 ? Math.min(bH+tH+hH, Math.round(d.done.total/d.planned.total*(bH+tH+hH))) : 0;
+    const col = document.createElement('div');
+    col.className = 'chart-col';
+    col.innerHTML = `
+      <div class="chart-val">${d.planned.total}</div>
+      <div class="chart-bars">
+        ${hH ? `<div class="chart-bar cb-high"   style="height:${hH}px;opacity:0.22"></div>` : ''}
+        ${tH ? `<div class="chart-bar cb-thresh"  style="height:${tH}px;opacity:0.22"></div>` : ''}
+        ${bH ? `<div class="chart-bar cb-base"    style="height:${bH}px;opacity:0.22"></div>` : ''}
+        ${dH ? `<div class="chart-done" style="height:${dH}px;background:${d.pc}"></div>` : ''}
+      </div>
+      <div class="chart-label">${d.label}</div>`;
+    chartEl.appendChild(col);
+  });
+}
+
+function renderAdaptations() {
+  const el = document.getElementById('adaptations');
+  if (!el) return;
+  let pl={base:0,threshold:0,high:0,total:0}, dn={base:0,threshold:0,high:0,total:0};
+  let doneCount=0, totalCount=0;
+  state.weeks.forEach(w => w.days.forEach(d => {
     const l = calcLoad(d.dur, d.z);
-    return { base: acc.base+l.base, threshold: acc.threshold+l.threshold, high: acc.high+l.high, total: acc.total+l.total };
-  }, { base:0, threshold:0, high:0, total:0 })
-}));
-
-const chartMax = Math.max(...allLoads.map(l => l.total));
-const chartH = 80;
-
-allLoads.forEach(wl => {
-  const baseH      = Math.round(wl.base / chartMax * chartH);
-  const threshH    = Math.round(wl.threshold / chartMax * chartH);
-  const highH      = Math.round(wl.high / chartMax * chartH);
-  const col = document.createElement('div');
-  col.className = 'chart-col';
-  col.innerHTML = `
-    <div class="chart-val">${wl.total}</div>
-    <div class="chart-bars">
-      ${highH  ? `<div class="chart-bar cb-high"   style="height:${highH}px"></div>`  : ''}
-      ${threshH? `<div class="chart-bar cb-thresh"  style="height:${threshH}px"></div>`:''}
-      ${baseH  ? `<div class="chart-bar cb-base"   style="height:${baseH}px"></div>`  : ''}
+    pl.base+=l.base; pl.threshold+=l.threshold; pl.high+=l.high; pl.total+=l.total;
+    if (d.dur>0) totalCount++;
+    if (d.done) { dn.base+=l.base; dn.threshold+=l.threshold; dn.high+=l.high; dn.total+=l.total; if(d.dur>0) doneCount++; }
+  }));
+  const pct = (a,b) => b>0 ? Math.min(100,Math.round(a/b*100)) : 0;
+  el.innerHTML = `<div class="adapt-grid">
+    <div class="adapt-card">
+      <div class="adapt-label">Progression globale</div>
+      <div class="adapt-bar-wrap"><div class="adapt-bar-fill" style="width:${pct(dn.total,pl.total)}%;background:var(--ink2)"></div></div>
+      <div class="adapt-vals"><span>${doneCount} séances / ${totalCount}</span><span class="adapt-pct">${pct(dn.total,pl.total)}%</span></div>
     </div>
-    <div class="chart-label">${wl.label}</div>`;
-  chartEl.appendChild(col);
-});
+    <div class="adapt-card">
+      <div class="adapt-label">Endurance aérobie (Z1/Z2)</div>
+      <div class="adapt-bar-wrap"><div class="adapt-bar-fill" style="width:${pct(dn.base,pl.base)}%;background:#1D5FA8;opacity:0.85"></div></div>
+      <div class="adapt-vals"><span>${dn.base} / ${pl.base} pts</span><span class="adapt-pct">${pct(dn.base,pl.base)}%</span></div>
+    </div>
+    <div class="adapt-card">
+      <div class="adapt-label">Seuil aérobie (Z3/Mixte)</div>
+      <div class="adapt-bar-wrap"><div class="adapt-bar-fill" style="width:${pct(dn.threshold,pl.threshold)}%;background:#C07B18;opacity:0.9"></div></div>
+      <div class="adapt-vals"><span>${dn.threshold} / ${pl.threshold} pts</span><span class="adapt-pct">${pct(dn.threshold,pl.threshold)}%</span></div>
+    </div>
+    ${pl.high>0?`<div class="adapt-card">
+      <div class="adapt-label">Haute intensité (Z4)</div>
+      <div class="adapt-bar-wrap"><div class="adapt-bar-fill" style="width:${pct(dn.high,pl.high)}%;background:#D4522A"></div></div>
+      <div class="adapt-vals"><span>${dn.high} / ${pl.high} pts</span><span class="adapt-pct">${pct(dn.high,pl.high)}%</span></div>
+    </div>`:''}
+  </div>`;
+}
+
+render();
 </script>
 </body>
 </html>
