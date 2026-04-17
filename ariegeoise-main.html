@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>L'Ariégeoise 2026 — Plan de préparation</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #F5F3EE;
+    --bg2: #ECEAE4;
+    --bg3: #E2DED6;
+    --ink: #1A1917;
+    --ink2: #5A5750;
+    --ink3: #9A9590;
+    --accent: #D4522A;
+    --accent2: #1D5FA8;
+    --green: #2D7A4F;
+    --amber: #C07B18;
+    --purple: #5B4BA8;
+    --border: rgba(26,25,23,0.12);
+    --border2: rgba(26,25,23,0.07);
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-display);
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* HEADER */
+  .masthead {
+    background: var(--ink);
+    color: var(--bg);
+    padding: 3rem 2.5rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .masthead::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -60px;
+    width: 340px; height: 340px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .masthead::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; right: 60px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .masthead-eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: rgba(255,255,255,0.45);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  .masthead-title {
+    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 0.5rem;
+  }
+  .masthead-title span { color: var(--accent); }
+  .masthead-sub {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.5);
+    font-weight: 400;
+    margin-bottom: 2rem;
+  }
+  .masthead-stats {
+    display: flex;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+  .mstat { display: flex; flex-direction: column; gap: 2px; }
+  .mstat-val {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -0.02em;
+  }
+  .mstat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .mstat-divider {
+    width: 1px;
+    background: rgba(255,255,255,0.1);
+    margin: 4px 0;
+  }
+
+  /* MAIN */
+  .main { padding: 2rem 2.5rem 4rem; max-width: 960px; }
+
+  /* SECTION HEADER */
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-head h2 {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink3);
+    font-weight: 500;
+  }
+  .section-head::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border2);
+  }
+
+  /* LEGEND */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 1.5rem;
+  }
+  .litem {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink2);
+    background: var(--bg2);
+    padding: 4px 10px;
+    border-radius: 2px;
+    border: 1px solid var(--border2);
+  }
+  .ldot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  /* WEEK CARDS */
+  .weeks { display: flex; flex-direction: column; gap: 4px; }
+
+  .week {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    overflow: hidden;
+    transition: box-shadow 0.15s;
+  }
+  .week:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.07); }
+
+  .week-top {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 0;
+  }
+
+  .week-meta {
+    padding: 12px 14px;
+    border-right: 1px solid var(--border2);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--bg);
+  }
+  .week-num {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--ink3);
+    font-weight: 500;
+  }
+  .week-dates {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .week-phase {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    padding: 3px 7px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 2px;
+    width: fit-content;
+  }
+  .week-volume {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink3);
+    margin-top: 4px;
+  }
+
+  .week-days {
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    align-items: center;
+  }
+
+  .day-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .day-name {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .day-pill {
+    width: 100%;
+    text-align: center;
+    padding: 4px 2px;
+    border-radius: 3px;
+    font-family: var(--font-mono);
+    font-size: 9px;
+    font-weight: 500;
+    line-height: 1.4;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .week-note {
+    padding: 8px 14px 10px;
+    background: var(--bg);
+    border-top: 1px solid var(--border2);
+    font-size: 12px;
+    color: var(--ink2);
+    font-style: italic;
+    line-height: 1.5;
+    grid-column: 1 / -1;
+  }
+  .week-note::before {
+    content: '→ ';
+    color: var(--ink3);
+  }
+
+  /* TABLES */
+  .table-section {
+    margin-top: 0.5rem;
+    overflow-x: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead th {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink3);
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg2);
+  }
+  tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--border2);
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--bg2); }
+  tbody tr td:first-child {
+    font-weight: 600;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+
+  /* NUTRITION SECTION */
+  .nutrition-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+    margin-top: 0.5rem;
+  }
+  .nutri-card {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 16px 18px;
+  }
+  .nutri-card h3 {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: -0.01em;
+  }
+  .nutri-card .nutri-sub {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink3);
+    margin-bottom: 10px;
+  }
+  .nutri-card ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .nutri-card li {
+    font-size: 12px;
+    color: var(--ink2);
+    line-height: 1.4;
+    padding-left: 12px;
+    position: relative;
+  }
+  .nutri-card li::before {
+    content: '—';
+    position: absolute;
+    left: 0;
+    color: var(--ink3);
+    font-size: 10px;
+  }
+  .nutri-card li strong { color: var(--ink); }
+
+  /* PHASES TIMELINE */
+  .timeline {
+    display: flex;
+    gap: 0;
+    margin: 0.5rem 0 1.5rem;
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .tphase {
+    flex: 1;
+    padding: 10px 8px;
+    text-align: center;
+    border-right: 1px solid var(--border2);
+  }
+  .tphase:last-child { border-right: none; }
+  .tphase .tp-weeks {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .tphase .tp-name {
+    font-size: 11px;
+    font-weight: 700;
+    margin: 2px 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .tphase .tp-bar {
+    height: 3px;
+    border-radius: 2px;
+    margin: 0 auto;
+    width: 80%;
+  }
+
+  /* FOOTER */
+  .footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* PRINT */
+  @media print {
+    body { background: white; }
+    .masthead { background: #1A1917; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .week:hover { box-shadow: none; }
+  }
+
+  @media (max-width: 600px) {
+    .masthead, .main { padding-left: 1.25rem; padding-right: 1.25rem; }
+    .week-top { grid-template-columns: 110px 1fr; }
+    .masthead-stats { gap: 1rem; }
+    .mstat-val { font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="masthead">
+  <div class="masthead-eyebrow">Plan de préparation cyclosportive</div>
+  <h1 class="masthead-title">L'Ariégeoise <span>2026</span></h1>
+  <div class="masthead-sub">Format 180 km · 4 000 m D+ · Fin juin 2026</div>
+  <div class="masthead-stats">
+    <div class="mstat">
+      <div class="mstat-val">184 km</div>
+      <div class="mstat-label">Distance</div>
+    </div>
+    <div class="mstat-divider"></div>
+    <div class="mstat">
+      <div class="mstat-val">~4 000 m</div>
+      <div class="mstat-label">Dénivelé +</div>
+    </div>
+    <div class="mstat-divider"></div>
+    <div class="mstat">
+      <div class="mstat-val">3 cols</div>
+      <div class="mstat-label">Ascensions majeures</div>
+    </div>
+    <div class="mstat-divider"></div>
+    <div class="mstat">
+      <div class="mstat-val">7–9 h</div>
+      <div class="mstat-label">Temps estimé</div>
+    </div>
+    <div class="mstat-divider"></div>
+    <div class="mstat">
+      <div class="mstat-val">10 sem.</div>
+      <div class="mstat-label">Préparation</div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- PHASES OVERVIEW -->
+  <div class="section-head"><h2>Phases</h2></div>
+  <div class="timeline">
+    <div class="tphase" style="background:rgba(91,75,168,0.07)">
+      <div class="tp-weeks">S1–S2</div>
+      <div class="tp-name" style="color:#5B4BA8">Pyrénées</div>
+      <div class="tp-bar" style="background:#5B4BA8; opacity:0.5"></div>
+    </div>
+    <div class="tphase" style="background:rgba(192,123,24,0.07)">
+      <div class="tp-weeks">S3–S4</div>
+      <div class="tp-name" style="color:#C07B18">Transition</div>
+      <div class="tp-bar" style="background:#C07B18; opacity:0.5"></div>
+    </div>
+    <div class="tphase" style="background:rgba(45,122,79,0.07)">
+      <div class="tp-weeks">S5–S6</div>
+      <div class="tp-name" style="color:#2D7A4F">Construction</div>
+      <div class="tp-bar" style="background:#2D7A4F; opacity:0.5"></div>
+    </div>
+    <div class="tphase" style="background:rgba(91,75,168,0.07)">
+      <div class="tp-weeks">S7</div>
+      <div class="tp-name" style="color:#5B4BA8">Ventoux ⛰</div>
+      <div class="tp-bar" style="background:#5B4BA8; opacity:0.5"></div>
+    </div>
+    <div class="tphase" style="background:rgba(212,82,42,0.07)">
+      <div class="tp-weeks">S8–S9</div>
+      <div class="tp-name" style="color:#D4522A">Affûtage</div>
+      <div class="tp-bar" style="background:#D4522A; opacity:0.5"></div>
+    </div>
+    <div class="tphase" style="background:rgba(212,82,42,0.12)">
+      <div class="tp-weeks">S10</div>
+      <div class="tp-name" style="color:#D4522A">Race week</div>
+      <div class="tp-bar" style="background:#D4522A"></div>
+    </div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="litem"><div class="ldot" style="background:#1D5FA8"></div>Z1/Z2 Endurance</div>
+    <div class="litem"><div class="ldot" style="background:#C07B18"></div>Z3 Tempo</div>
+    <div class="litem"><div class="ldot" style="background:#D4522A"></div>Z4 Seuil</div>
+    <div class="litem"><div class="ldot" style="background:#2D7A4F"></div>Longue / Test</div>
+    <div class="litem"><div class="ldot" style="background:#9A9590"></div>Récup / Repos</div>
+    <div class="litem"><div class="ldot" style="background:#5B4BA8"></div>Événement clé</div>
+  </div>
+
+  <!-- WEEKS -->
+  <div class="section-head"><h2>Programme semaine par semaine</h2></div>
+  <div class="weeks" id="weeks"></div>
+
+  <!-- INTENSITY TABLE -->
+  <div class="section-head" style="margin-top:2rem"><h2>Répartition par phase</h2></div>
+  <div class="table-section">
+    <table>
+      <thead>
+        <tr>
+          <th>Phase</th>
+          <th>Z1/Z2 Fond</th>
+          <th>Z3 Tempo</th>
+          <th>Z4 Seuil</th>
+          <th>Volume/sem.</th>
+          <th>Objectif clé</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Pyrénées (S1–S2)</td><td>65%</td><td>25%</td><td>10%</td><td>15–18 h</td><td>D+ max, adaptation montagne</td></tr>
+        <tr><td>Transition (S3–S4)</td><td>70%</td><td>20%</td><td>10%</td><td>10–12 h</td><td>Maintien via home trainer</td></tr>
+        <tr><td>Construction (S5–S6)</td><td>70%</td><td>22%</td><td>8%</td><td>12–15 h</td><td>Sorties longues, tests</td></tr>
+        <tr><td>Ventoux (S7)</td><td>60%</td><td>30%</td><td>10%</td><td>~15 h</td><td>Simulation cols répétés</td></tr>
+        <tr><td>Affûtage (S8–S9)</td><td>75%</td><td>18%</td><td>7%</td><td>8–10 h</td><td>Fraîcheur, qualité</td></tr>
+        <tr><td>Race week (S10)</td><td>85%</td><td>10%</td><td>5%</td><td>4–5 h</td><td>Activation uniquement</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- HOME TRAINER TABLE -->
+  <div class="section-head" style="margin-top:2rem"><h2>Séances home trainer types</h2></div>
+  <div class="table-section">
+    <table>
+      <thead>
+        <tr><th>Séance</th><th>Durée</th><th>Zone</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Col simulé</td><td>60–90 min</td><td>Z3</td><td>Résistance élevée, cadence basse (60–70 rpm) — simule montée longue</td></tr>
+        <tr><td>Endurance souple</td><td>90–120 min</td><td>Z1/Z2</td><td>Film/podcast, cadence normale, récupération active</td></tr>
+        <tr><td>Tempo bloc</td><td>75 min</td><td>Z2/Z3</td><td>20 min échauff. + 2×20 min tempo + 15 min cool down</td></tr>
+        <tr><td>Activation</td><td>30–45 min</td><td>Z1</td><td>Veille de sortie longue ou retour de grosse semaine</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- NUTRITION SECTION -->
+  <div class="section-head" style="margin-top:2rem"><h2>Nutrition à l'effort</h2></div>
+  <div class="nutrition-grid">
+    <div class="nutri-card">
+      <h3>Stratégie glucides</h3>
+      <div class="nutri-sub">Objectif : 90–120 g/h race day</div>
+      <ul>
+        <li>Actuellement à <strong>70 g/h</strong> → bonne base</li>
+        <li>Monter à <strong>90 g/h</strong> dès les longues sorties mai</li>
+        <li>Tester <strong>100–120 g/h</strong> sur les sorties de juin</li>
+        <li>Ratio glucose/fructose <strong>2:1 impératif</strong> au-delà de 60 g/h (limite intestinale du glucose seul)</li>
+        <li>Ne pas attendre la faim : <strong>toutes les 20 min</strong> minimum</li>
+      </ul>
+    </div>
+    <div class="nutri-card">
+      <h3>Sources recommandées</h3>
+      <div class="nutri-sub">Combo solide + liquide</div>
+      <ul>
+        <li><strong>Gels maltodextrine + fructose</strong> (Maurten, SIS Beta Fuel, Näak…)</li>
+        <li><strong>Barres céréales</strong> + eau sucrée maison (fructose)</li>
+        <li><strong>Bananes + dattes</strong> pour l'aspect solide en début de course</li>
+        <li>Boisson glucidique à <strong>6–8%</strong> de concentration max (éviter l'hyperosmolarité)</li>
+        <li>Tester chaque produit à l'entraînement — jamais le jour J</li>
+      </ul>
+    </div>
+    <div class="nutri-card">
+      <h3>Hydratation</h3>
+      <div class="nutri-sub">Ariégeoise = fin juin = potentiellement chaud</div>
+      <ul>
+        <li><strong>500–800 ml/h</strong> selon chaleur et transpiration</li>
+        <li>Sodium : <strong>500–1000 mg/h</strong> en cas de chaleur ou effort > 4h</li>
+        <li>Pas de seuil de soif — boire <strong>régulièrement et petit à petit</strong></li>
+        <li>Prévoir d'utiliser les <strong>ravitaillements officiels</strong> + bidons propres au départ</li>
+      </ul>
+    </div>
+    <div class="nutri-card">
+      <h3>Avant la course</h3>
+      <div class="nutri-sub">J–2 à J0</div>
+      <ul>
+        <li><strong>J–2 :</strong> charge glucidique légère (pasta, riz, patate douce)</li>
+        <li><strong>J–1 :</strong> repas familier et digeste, éviter les fibres et gras</li>
+        <li><strong>Matin J :</strong> repas 2h30–3h avant — 100–150 g de glucides facilement digestes</li>
+        <li>Café : OK si habituel, <strong>éviter si pas coutumier</strong></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span>Ariégeoise 2026 — Plan généré en avril 2026</span>
+    <span>Vincennes → Pyrénées → Ventoux → Ariège</span>
+  </div>
+</div>
+
+<script>
+const weeks = [
+  {
+    num:1, label:"S1", dates:"21–27 avr", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
+    note:"Profite du D+ max. Accumule les montées, reste en Z1/Z2 le matin, permets-toi du Z3 sur les cols.",
+    days:[
+      {n:"Lu",l:"Z2 fond",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Ma",l:"Col Z3",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Me",l:"Col Z3",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Je",l:"Récup",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ve",l:"Z2 fond",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Sa",l:"Longue 5h+",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
+      {n:"Di",l:"Col Z2",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+    ]
+  },
+  {
+    num:2, label:"S2", dates:"28 avr–4 mai", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
+    note:"Semaine de charge en montagne. La longue du samedi peut simuler des cols enchaînés.",
+    days:[
+      {n:"Lu",l:"Z2 fond",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Ma",l:"Col Z3",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Me",l:"Repos/marche",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Je",l:"Col Z2/Z3",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Ve",l:"Z2 fond",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Sa",l:"Longue 6h",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
+      {n:"Di",l:"Z1 récup",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+    ]
+  },
+  {
+    num:3, label:"S3", dates:"5–11 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
+    note:"Retour à Paris. HT en semaine pour maintenir la condition. Première sortie longue test le week-end.",
+    days:[
+      {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ma",l:"HT col 75'",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Me",l:"HT endur 90'",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Je",l:"HT tempo 75'",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Ve",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Sa",l:"TEST 4–5h",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
+      {n:"Di",l:"HT récup 45'",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+    ]
+  },
+  {
+    num:4, label:"S4", dates:"12–18 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
+    note:"Semaine normale à Vincennes. Charge modérée, focus sur la qualité des séances HT.",
+    days:[
+      {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ma",l:"HT col 90'",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Me",l:"HT endur 2h",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Je",l:"HT tempo 75'",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Ve",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Sa",l:"Longue 5h",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
+      {n:"Di",l:"Z1 court",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+    ]
+  },
+  {
+    num:5, label:"S5", dates:"19–25 mai", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
+    note:"Montée en charge progressive. Les sorties longues sont le cœur de cette phase.",
+    days:[
+      {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ma",l:"HT col 90'",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Me",l:"HT endur 2h",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Je",l:"HT tempo 90'",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Ve",l:"Récup légère",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Sa",l:"TEST 5–6h",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
+      {n:"Di",l:"Z1 2h",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+    ]
+  },
+  {
+    num:6, label:"S6", dates:"26 mai–1 juin", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
+    note:"Charge maximale de la préparation. La longue du samedi peut aller jusqu'à 6–7h.",
+    days:[
+      {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ma",l:"HT col 90'",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Me",l:"HT endur 2h",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Je",l:"HT tempo 2h",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Ve",l:"Récup",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Sa",l:"TEST 6–7h",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
+      {n:"Di",l:"Z1 2h",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+    ]
+  },
+  {
+    num:7, label:"S7", dates:"2–8 juin", phase:"Ventoux ⛰", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"~15 h",
+    note:"Week-end Ventoux. Gère l'allure sur la première montée pour être encore capable de grimper sur la deuxième — exactement l'enjeu de l'Ariégeoise.",
+    days:[
+      {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ma",l:"HT léger 60'",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Me",l:"HT endur 90'",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Je",l:"Récup",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ve",l:"Route Ventoux",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Sa",l:"Ventoux x1–2",c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
+      {n:"Di",l:"Ventoux opt.",c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
+    ]
+  },
+  {
+    num:8, label:"S8", dates:"9–15 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
+    note:"Début de la réduction de volume. Maintien de quelques pics d'intensité, récupération prioritaire.",
+    days:[
+      {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ma",l:"HT col 60'",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Me",l:"HT endur 90'",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Je",l:"HT tempo 60'",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Ve",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Sa",l:"Sortie 4h Z2",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Di",l:"Z1 1h30",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+    ]
+  },
+  {
+    num:9, label:"S9", dates:"16–22 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
+    note:"Volume bas, intensité maîtrisée. Soigner alimentation, sommeil, et préparer le matériel.",
+    days:[
+      {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ma",l:"HT 45' Z2",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Me",l:"HT 60' + accé",c:"#C07B18",b:"rgba(192,123,24,0.12)"},
+      {n:"Je",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ve",l:"Activ 45'",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Sa",l:"Sortie 2h30",c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
+      {n:"Di",l:"Repos complet",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+    ]
+  },
+  {
+    num:10, label:"S10", dates:"23–28 juin", phase:"Race week 🏁", pc:"#D4522A", pb:"rgba(212,82,42,0.15)", vol:"4–5 h",
+    note:"Activations courtes uniquement. Dormir, manger, vérifier le vélo. La forme est acquise — confiance.",
+    days:[
+      {n:"Lu",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ma",l:"Activ 30'",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Me",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Je",l:"Activ 30'",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Ve",l:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Sa",l:"Repos/trajet",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
+      {n:"Di",l:"🏁 COURSE",c:"#D4522A",b:"rgba(212,82,42,0.15)"},
+    ]
+  },
+];
+
+const container = document.getElementById('weeks');
+weeks.forEach(w => {
+  const div = document.createElement('div');
+  div.className = 'week';
+  
+  const daysHtml = w.days.map(d => `
+    <div class="day-col">
+      <div class="day-name">${d.n}</div>
+      <div class="day-pill" style="color:${d.c};background:${d.b}">${d.l}</div>
+    </div>
+  `).join('');
+
+  div.innerHTML = `
+    <div class="week-top">
+      <div class="week-meta">
+        <div class="week-num">Semaine ${w.num}</div>
+        <div class="week-dates">${w.dates}</div>
+        <div class="week-phase" style="color:${w.pc};background:${w.pb}">${w.phase}</div>
+        <div class="week-volume">${w.vol}</div>
+      </div>
+      <div class="week-days">${daysHtml}</div>
+    </div>
+    <div class="week-note">${w.note}</div>
+  `;
+  container.appendChild(div);
+});
+</script>
+</body>
+</html>
