@@ -708,6 +708,37 @@
     line-height: 1;
   }
 
+  /* EVENT CONFIG MODAL */
+  .sport-selector { display:flex; gap:4px; margin-bottom:2px; }
+  .sport-btn {
+    flex:1; padding:8px 4px; border:1px solid var(--border); border-radius:3px;
+    background:var(--bg2); color:var(--ink2); font-family:var(--font-mono);
+    font-size:10px; cursor:pointer; text-align:center; transition:all 0.12s;
+  }
+  .sport-btn:hover { border-color:var(--accent2); color:var(--accent2); }
+  .sport-btn.active { background:var(--ink); color:var(--bg); border-color:var(--ink); }
+  .modal-section-head {
+    font-family:var(--font-mono); font-size:9px; color:var(--ink3);
+    text-transform:uppercase; letter-spacing:0.12em;
+    border-top:1px solid var(--border2); padding-top:10px; margin-top:4px;
+  }
+  .days-picker { display:flex; gap:6px; flex-wrap:wrap; }
+  .day-check {
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-family:var(--font-mono); font-size:9px; color:var(--ink2);
+    text-transform:uppercase; letter-spacing:0.06em; cursor:pointer;
+  }
+  .day-check input[type="checkbox"] { width:18px; height:18px; accent-color:var(--accent2); cursor:pointer; }
+  .masthead-edit-btn {
+    background:none; border:1px solid rgba(255,255,255,0.15); border-radius:3px;
+    color:rgba(255,255,255,0.4); font-family:var(--font-mono); font-size:10px;
+    letter-spacing:0.05em; cursor:pointer; padding:2px 8px; line-height:1.6;
+    transition:all 0.12s; margin-left:auto;
+  }
+  .masthead-edit-btn:hover { color:#fff; border-color:rgba(255,255,255,0.4); }
+  .constraints-row { display:flex; gap:12px; align-items:flex-start; flex-wrap:wrap; }
+  .constraints-row > div { flex:1; min-width:120px; display:flex; flex-direction:column; gap:4px; }
+
   /* CALENDAR CONFIG */
   .cal-config {
     display: flex;
@@ -847,34 +878,10 @@
     <div class="masthead-sub">Le programme ne souffre pas à ta place.</div>
     <div class="masthead-event-row">
       <div class="masthead-event-badge">Objectif en cours</div>
-      <div class="masthead-event-name">L'Ariégeoise 2026</div>
+      <div class="masthead-event-name" id="mh-event-name">L'Ariégeoise 2026</div>
+      <button class="masthead-edit-btn" onclick="openEventModal()">⚙ Modifier</button>
     </div>
-    <div class="masthead-stats">
-      <div class="mstat">
-        <div class="mstat-val">184 km</div>
-        <div class="mstat-label">Distance</div>
-      </div>
-      <div class="mstat-divider"></div>
-      <div class="mstat">
-        <div class="mstat-val">~4 000 m</div>
-        <div class="mstat-label">Dénivelé +</div>
-      </div>
-      <div class="mstat-divider"></div>
-      <div class="mstat">
-        <div class="mstat-val">3 cols</div>
-        <div class="mstat-label">Ascensions majeures</div>
-      </div>
-      <div class="mstat-divider"></div>
-      <div class="mstat">
-        <div class="mstat-val">7–9 h</div>
-        <div class="mstat-label">Temps estimé</div>
-      </div>
-      <div class="mstat-divider"></div>
-      <div class="mstat">
-        <div class="mstat-val">10 sem.</div>
-        <div class="mstat-label">Préparation</div>
-      </div>
-    </div>
+    <div class="masthead-stats" id="mh-stats"></div>
   </div>
 </div>
 
@@ -1049,6 +1056,94 @@
     <span>Ariégeoise 2026 — Plan généré en avril 2026</span>
     <span>Vincennes → Pyrénées → Ventoux → Ariège</span>
     <button onclick="resetState()" style="background:none;border:none;font-family:var(--font-mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;text-decoration:underline;padding:0">Réinitialiser</button>
+  </div>
+</div>
+
+<div id="event-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeEventModal()">
+  <div class="modal-box" style="width:min(500px,92vw)">
+    <div class="modal-header">
+      <span class="modal-title">Configuration de l'événement</span>
+      <button class="modal-close" onclick="closeEventModal()">×</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;max-height:65vh">
+      <label>Nom de l'événement</label>
+      <input id="ev-name" type="text" placeholder="ex: L'Ariégeoise 2026">
+
+      <label>Sport</label>
+      <div class="sport-selector">
+        <button class="sport-btn active" data-sport="velo" onclick="selectSport('velo')">🚴 Vélo</button>
+        <button class="sport-btn" data-sport="cap"  onclick="selectSport('cap')">🏃 Course à pied</button>
+        <button class="sport-btn" data-sport="tri"  onclick="selectSport('tri')">🏊 Triathlon</button>
+      </div>
+
+      <div id="ev-fields-velo" style="display:flex;flex-direction:column;gap:4px">
+        <label>Distance</label>
+        <input id="ev-velo-dist"  type="text" placeholder="184 km">
+        <label>Dénivelé +</label>
+        <input id="ev-velo-dplus" type="text" placeholder="4 000 m">
+        <label>Points clés</label>
+        <input id="ev-velo-keys"  type="text" placeholder="3 cols">
+        <label>Temps estimé</label>
+        <input id="ev-velo-temps" type="text" placeholder="7–9 h">
+      </div>
+
+      <div id="ev-fields-cap" style="display:none;flex-direction:column;gap:4px">
+        <label>Format</label>
+        <select id="ev-cap-format" onchange="onCapFormatChange()">
+          <option value="k5">5 km</option>
+          <option value="k10">10 km</option>
+          <option value="semi">Semi-marathon</option>
+          <option value="marathon" selected>Marathon</option>
+          <option value="ultra">Ultra</option>
+        </select>
+        <div id="ev-cap-ultra" style="display:none;flex-direction:column;gap:4px">
+          <label>Distance</label>
+          <input id="ev-cap-dist"  type="text" placeholder="100 km">
+          <label>Dénivelé +</label>
+          <input id="ev-cap-dplus" type="text" placeholder="6 000 m">
+        </div>
+        <label>Temps estimé</label>
+        <input id="ev-cap-temps" type="text" placeholder="3h30">
+      </div>
+
+      <div id="ev-fields-tri" style="display:none;flex-direction:column;gap:4px">
+        <label>Format</label>
+        <select id="ev-tri-format">
+          <option value="S">Triathlon S</option>
+          <option value="M">Triathlon M</option>
+          <option value="70.3" selected>Half Ironman 70.3</option>
+          <option value="ironman">Ironman</option>
+        </select>
+        <label>Composition</label>
+        <input id="ev-tri-comp"  type="text" placeholder="1.9km nage + 90km vélo + 21km course">
+        <label>Temps estimé</label>
+        <input id="ev-tri-temps" type="text" placeholder="5–6 h">
+      </div>
+
+      <div class="modal-section-head">Contraintes</div>
+      <div class="constraints-row">
+        <div>
+          <label>Jours disponibles</label>
+          <div class="days-picker">
+            <label class="day-check"><input type="checkbox" id="ev-day-0" checked>Lu</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-1" checked>Ma</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-2" checked>Me</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-3" checked>Je</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-4" checked>Ve</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-5" checked>Sa</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-6" checked>Di</label>
+          </div>
+        </div>
+        <div>
+          <label>Volume cible / semaine (h)</label>
+          <input id="ev-volume" type="number" min="1" max="40" step="0.5" placeholder="12">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeEventModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveEventConfig()">Enregistrer</button>
+    </div>
   </div>
 </div>
 
@@ -1305,7 +1400,14 @@ const INITIAL_WEEKS = [
 ];
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-const DEFAULT_CONFIG = { startDate:'2026-04-20', endDate:'2026-06-28', customPhases:[] };
+const DEFAULT_CONFIG = {
+  startDate:'2026-04-20', endDate:'2026-06-28', customPhases:[],
+  event: {
+    name:"L'Ariégeoise 2026", sport:'velo',
+    distance:'184 km', denivele:'~4 000 m', pointsCles:'3 cols', temps:'7–9 h'
+  },
+  constraints: { days:[true,true,true,true,true,true,true], weeklyVolume:12 }
+};
 
 function initState() {
   try {
@@ -1321,6 +1423,8 @@ function initState() {
       });
       if (!p.config) p.config = {...DEFAULT_CONFIG};
       if (!p.config.customPhases) p.config.customPhases = [];
+      if (!p.config.event) p.config.event = {...DEFAULT_CONFIG.event};
+      if (!p.config.constraints) p.config.constraints = {...DEFAULT_CONFIG.constraints};
       return p;
     }
   } catch(e) {}
@@ -1399,7 +1503,40 @@ function resetState() {
 }
 
 // ── RENDER ─────────────────────────────────────────────────────────────────
-function render() { renderCalendarConfig(); renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); }
+function render() { renderMasthead(); renderCalendarConfig(); renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); }
+
+function getEventStats(ev) {
+  const s = [];
+  if (ev.sport === 'velo') {
+    if (ev.distance)   s.push({val:ev.distance,   label:'Distance'});
+    if (ev.denivele)   s.push({val:ev.denivele,   label:'Dénivelé +'});
+    if (ev.pointsCles) s.push({val:ev.pointsCles, label:'Points clés'});
+    if (ev.temps)      s.push({val:ev.temps,      label:'Temps estimé'});
+  } else if (ev.sport === 'cap') {
+    const fmt = {k5:'5 km',k10:'10 km',semi:'Semi-marathon',marathon:'Marathon',ultra:'Ultra'};
+    if (ev.format) s.push({val:fmt[ev.format]||ev.format, label:'Format'});
+    if (ev.format==='ultra' && ev.distance) s.push({val:ev.distance, label:'Distance'});
+    if (ev.format==='ultra' && ev.denivele) s.push({val:ev.denivele, label:'Dénivelé +'});
+    if (ev.temps) s.push({val:ev.temps, label:'Temps estimé'});
+  } else if (ev.sport === 'tri') {
+    const fmt = {S:'Triathlon S',M:'Triathlon M','70.3':'Half 70.3',ironman:'Ironman'};
+    if (ev.format) s.push({val:fmt[ev.format]||ev.format, label:'Format'});
+    if (ev.composition) s.push({val:ev.composition, label:'Composition'});
+    if (ev.temps) s.push({val:ev.temps, label:'Temps estimé'});
+  }
+  s.push({val:`${state.weeks.length} sem.`, label:'Préparation'});
+  return s;
+}
+function renderMasthead() {
+  const ev = state.config.event || {};
+  const nameEl = document.getElementById('mh-event-name');
+  if (nameEl) nameEl.textContent = ev.name || '—';
+  const statsEl = document.getElementById('mh-stats');
+  if (!statsEl) return;
+  statsEl.innerHTML = getEventStats(ev).map((s,i) =>
+    `${i>0?'<div class="mstat-divider"></div>':''}<div class="mstat"><div class="mstat-val">${s.val}</div><div class="mstat-label">${s.label}</div></div>`
+  ).join('');
+}
 
 function renderCalendarConfig() {
   const s = document.getElementById('cfg-start');
@@ -1551,6 +1688,71 @@ function renderAdaptations() {
       <div class="adapt-vals"><span>${dn.high} / ${pl.high} pts</span><span class="adapt-pct">${pct(dn.high,pl.high)}%</span></div>
     </div>`:''}
   </div>`;
+}
+
+// ── EVENT CONFIG ───────────────────────────────────────────────────────────
+let _currentSport = 'velo';
+function openEventModal() {
+  const ev = state.config.event || {};
+  const co = state.config.constraints || {};
+  document.getElementById('ev-name').value = ev.name || '';
+  selectSport(ev.sport || 'velo');
+  if ((ev.sport||'velo') === 'velo') {
+    document.getElementById('ev-velo-dist').value  = ev.distance   || '';
+    document.getElementById('ev-velo-dplus').value = ev.denivele   || '';
+    document.getElementById('ev-velo-keys').value  = ev.pointsCles || '';
+    document.getElementById('ev-velo-temps').value = ev.temps      || '';
+  } else if (ev.sport === 'cap') {
+    document.getElementById('ev-cap-format').value = ev.format  || 'marathon';
+    document.getElementById('ev-cap-dist').value   = ev.distance|| '';
+    document.getElementById('ev-cap-dplus').value  = ev.denivele|| '';
+    document.getElementById('ev-cap-temps').value  = ev.temps   || '';
+    onCapFormatChange();
+  } else if (ev.sport === 'tri') {
+    document.getElementById('ev-tri-format').value = ev.format      || '70.3';
+    document.getElementById('ev-tri-comp').value   = ev.composition || '';
+    document.getElementById('ev-tri-temps').value  = ev.temps       || '';
+  }
+  const days = co.days || [true,true,true,true,true,true,true];
+  days.forEach((v,i) => { document.getElementById(`ev-day-${i}`).checked = v; });
+  document.getElementById('ev-volume').value = co.weeklyVolume || 12;
+  document.getElementById('event-modal').style.display = 'flex';
+}
+function closeEventModal() { document.getElementById('event-modal').style.display = 'none'; }
+function selectSport(sport) {
+  _currentSport = sport;
+  document.querySelectorAll('.sport-btn').forEach(b => b.classList.toggle('active', b.dataset.sport === sport));
+  ['velo','cap','tri'].forEach(s => {
+    document.getElementById(`ev-fields-${s}`).style.display = s===sport ? 'flex' : 'none';
+  });
+}
+function onCapFormatChange() {
+  const isUltra = document.getElementById('ev-cap-format').value === 'ultra';
+  document.getElementById('ev-cap-ultra').style.display = isUltra ? 'flex' : 'none';
+}
+function saveEventConfig() {
+  const ev = { name: document.getElementById('ev-name').value.trim(), sport: _currentSport };
+  if (_currentSport === 'velo') {
+    ev.distance   = document.getElementById('ev-velo-dist').value.trim();
+    ev.denivele   = document.getElementById('ev-velo-dplus').value.trim();
+    ev.pointsCles = document.getElementById('ev-velo-keys').value.trim();
+    ev.temps      = document.getElementById('ev-velo-temps').value.trim();
+  } else if (_currentSport === 'cap') {
+    ev.format   = document.getElementById('ev-cap-format').value;
+    ev.distance = document.getElementById('ev-cap-dist').value.trim();
+    ev.denivele = document.getElementById('ev-cap-dplus').value.trim();
+    ev.temps    = document.getElementById('ev-cap-temps').value.trim();
+  } else if (_currentSport === 'tri') {
+    ev.format      = document.getElementById('ev-tri-format').value;
+    ev.composition = document.getElementById('ev-tri-comp').value.trim();
+    ev.temps       = document.getElementById('ev-tri-temps').value.trim();
+  }
+  state.config.event = ev;
+  state.config.constraints = {
+    days: [0,1,2,3,4,5,6].map(i => document.getElementById(`ev-day-${i}`).checked),
+    weeklyVolume: parseFloat(document.getElementById('ev-volume').value) || 12
+  };
+  saveState(); closeEventModal(); render();
 }
 
 // ── PHASE DROPDOWN ────────────────────────────────────────────────────────
