@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>L'Ariégeoise 2026 — Plan de préparation</title>
+<title>Prépa3000 — Plan de préparation sportive</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -36,54 +36,95 @@
 
   /* HEADER */
   .masthead {
-    background: var(--ink);
+    background: #141210;
     color: var(--bg);
-    padding: 3rem 0 2.5rem;
+    padding: 2.5rem 0 2.2rem;
     position: relative;
     overflow: hidden;
+  }
+  .masthead::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent) 0%, #f0a030 45%, var(--purple) 100%);
+  }
+  .masthead-wm {
+    position: absolute;
+    right: -0.05em;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: clamp(7rem, 18vw, 13rem);
+    font-weight: 800;
+    color: rgba(255,255,255,0.028);
+    letter-spacing: -0.05em;
+    pointer-events: none;
+    user-select: none;
+    line-height: 1;
   }
   .masthead-inner {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 2.5rem;
-  }
-  .masthead::before {
-    content: '';
-    position: absolute;
-    top: -40px; right: -60px;
-    width: 340px; height: 340px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.06);
-  }
-  .masthead::after {
-    content: '';
-    position: absolute;
-    bottom: -80px; right: 60px;
-    width: 200px; height: 200px;
-    border-radius: 50%;
-    border: 1px solid rgba(255,255,255,0.04);
+    position: relative;
   }
   .masthead-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     font-family: var(--font-mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    color: rgba(255,255,255,0.45);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    color: rgba(255,255,255,0.4);
     text-transform: uppercase;
-    margin-bottom: 0.75rem;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 2px;
+    padding: 3px 9px;
+    margin-bottom: 1rem;
   }
   .masthead-title {
-    font-size: clamp(2.2rem, 5vw, 3.5rem);
+    font-size: clamp(2.4rem, 6vw, 4.2rem);
     font-weight: 800;
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    margin-bottom: 0.5rem;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    margin-bottom: 0.4rem;
   }
-  .masthead-title span { color: var(--accent); }
+  .masthead-title .t-name { color: rgba(255,255,255,0.92); }
+  .masthead-title .t-num  {
+    color: var(--accent);
+    font-size: 1.15em;
+    letter-spacing: -0.05em;
+  }
   .masthead-sub {
-    font-size: 1rem;
-    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.38);
     font-weight: 400;
-    margin-bottom: 2rem;
+    font-style: italic;
+    margin-bottom: 1.8rem;
+    letter-spacing: 0.01em;
+  }
+  .masthead-event-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1rem;
+  }
+  .masthead-event-badge {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--accent);
+    border: 1px solid rgba(212,82,42,0.4);
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+  .masthead-event-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: -0.01em;
   }
   .masthead-stats {
     display: flex;
@@ -92,21 +133,21 @@
   }
   .mstat { display: flex; flex-direction: column; gap: 2px; }
   .mstat-val {
-    font-size: 1.4rem;
+    font-size: 1.25rem;
     font-weight: 700;
     color: #fff;
     letter-spacing: -0.02em;
   }
   .mstat-label {
     font-family: var(--font-mono);
-    font-size: 10px;
-    color: rgba(255,255,255,0.4);
+    font-size: 9px;
+    color: rgba(255,255,255,0.35);
     text-transform: uppercase;
     letter-spacing: 0.1em;
   }
   .mstat-divider {
     width: 1px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.08);
     margin: 4px 0;
   }
 
@@ -799,36 +840,41 @@
 <body>
 
 <div class="masthead">
+  <div class="masthead-wm">3000</div>
   <div class="masthead-inner">
-  <div class="masthead-eyebrow">Plan de préparation cyclosportive</div>
-  <h1 class="masthead-title">L'Ariégeoise <span>2026</span></h1>
-  <div class="masthead-sub">Format 180 km · 4 000 m D+ · Fin juin 2026</div>
-  <div class="masthead-stats">
-    <div class="mstat">
-      <div class="mstat-val">184 km</div>
-      <div class="mstat-label">Distance</div>
+    <div class="masthead-eyebrow">🏅 Outil de préparation sportive</div>
+    <h1 class="masthead-title"><span class="t-name">Prépa</span><span class="t-num">3000</span></h1>
+    <div class="masthead-sub">Le programme ne souffre pas à ta place.</div>
+    <div class="masthead-event-row">
+      <div class="masthead-event-badge">Objectif en cours</div>
+      <div class="masthead-event-name">L'Ariégeoise 2026</div>
     </div>
-    <div class="mstat-divider"></div>
-    <div class="mstat">
-      <div class="mstat-val">~4 000 m</div>
-      <div class="mstat-label">Dénivelé +</div>
+    <div class="masthead-stats">
+      <div class="mstat">
+        <div class="mstat-val">184 km</div>
+        <div class="mstat-label">Distance</div>
+      </div>
+      <div class="mstat-divider"></div>
+      <div class="mstat">
+        <div class="mstat-val">~4 000 m</div>
+        <div class="mstat-label">Dénivelé +</div>
+      </div>
+      <div class="mstat-divider"></div>
+      <div class="mstat">
+        <div class="mstat-val">3 cols</div>
+        <div class="mstat-label">Ascensions majeures</div>
+      </div>
+      <div class="mstat-divider"></div>
+      <div class="mstat">
+        <div class="mstat-val">7–9 h</div>
+        <div class="mstat-label">Temps estimé</div>
+      </div>
+      <div class="mstat-divider"></div>
+      <div class="mstat">
+        <div class="mstat-val">10 sem.</div>
+        <div class="mstat-label">Préparation</div>
+      </div>
     </div>
-    <div class="mstat-divider"></div>
-    <div class="mstat">
-      <div class="mstat-val">3 cols</div>
-      <div class="mstat-label">Ascensions majeures</div>
-    </div>
-    <div class="mstat-divider"></div>
-    <div class="mstat">
-      <div class="mstat-val">7–9 h</div>
-      <div class="mstat-label">Temps estimé</div>
-    </div>
-    <div class="mstat-divider"></div>
-    <div class="mstat">
-      <div class="mstat-val">10 sem.</div>
-      <div class="mstat-label">Préparation</div>
-    </div>
-  </div>
   </div>
 </div>
 
