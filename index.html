@@ -1132,8 +1132,15 @@
         </div>
       </div>
     </div>
+    <div id="gen-confirm-bar" style="display:none;padding:10px 18px;background:rgba(212,82,42,0.07);border-top:1px solid rgba(212,82,42,0.2);font-size:12px;color:var(--accent);display:none;align-items:center;justify-content:space-between;gap:10px">
+      <span>⚠ Remplacera tout le plan — confirmer ?</span>
+      <div style="display:flex;gap:6px">
+        <button class="btn" onclick="hideGenConfirm()" style="font-size:11px;padding:5px 10px">Non</button>
+        <button class="btn btn-warn" onclick="doGeneratePlan()" style="font-size:11px;padding:5px 10px">Oui, générer</button>
+      </div>
+    </div>
     <div class="modal-footer" style="justify-content:space-between">
-      <button class="btn btn-warn" onclick="confirmGeneratePlan()">🔄 Générer le plan</button>
+      <button class="btn btn-warn" onclick="showGenConfirm()">🔄 Générer le plan</button>
       <div style="display:flex;gap:8px">
         <button class="btn" onclick="closeEventModal()">Annuler</button>
         <button class="btn btn-primary" onclick="saveEventConfig()">Enregistrer</button>
@@ -1916,7 +1923,7 @@ function openEventModal() {
   document.getElementById('ev-volume').value = co.weeklyVolume || 12;
   document.getElementById('event-modal').style.display = 'flex';
 }
-function closeEventModal() { document.getElementById('event-modal').style.display = 'none'; }
+function closeEventModal() { document.getElementById('event-modal').style.display = 'none'; hideGenConfirm(); }
 function selectSport(sport) {
   _currentSport = sport;
   document.querySelectorAll('.sport-btn').forEach(b => b.classList.toggle('active', b.dataset.sport === sport));
@@ -1957,14 +1964,23 @@ function saveEventConfig() {
   state.config.constraints = constraints;
   saveState(); closeEventModal(); render();
 }
-function confirmGeneratePlan() {
-  if (!confirm('Générer un nouveau plan remplacera toutes tes semaines actuelles.\n\nCette action est irréversible. Continuer ?')) return;
+function showGenConfirm() {
+  const bar = document.getElementById('gen-confirm-bar');
+  if (bar) bar.style.display = 'flex';
+}
+function hideGenConfirm() {
+  const bar = document.getElementById('gen-confirm-bar');
+  if (bar) bar.style.display = 'none';
+}
+function doGeneratePlan() {
   const { ev, constraints } = readEventForm();
   state.config.event = ev;
   state.config.constraints = constraints;
   state.weeks = generateTemplatePlan(ev.sport, constraints, state.config.startDate, state.config.endDate);
+  hideGenConfirm();
   saveState(); closeEventModal(); render();
 }
+function confirmGeneratePlan() { showGenConfirm(); }
 
 // ── PLAN GENERATION ────────────────────────────────────────────────────────
 function getPhaseForWeek(idx, total) {
