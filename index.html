@@ -868,6 +868,94 @@
     .masthead-stats { gap: 1rem; }
     .mstat-val { font-size: 1.1rem; }
   }
+
+  /* WEEKS + SIDE PANEL LAYOUT */
+  .weeks-with-panel {
+    display: grid;
+    grid-template-columns: 1fr 208px;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .session-panel {
+    position: sticky;
+    top: 1rem;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
+  }
+  .sp-header {
+    padding: 10px 10px 8px;
+    border-bottom: 1px solid var(--border2);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .sp-title {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 6px;
+  }
+  .sp-tabs { display: flex; gap: 2px; }
+  .sp-tab {
+    flex: 1;
+    padding: 4px 2px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: none;
+    color: var(--ink3);
+    font-family: var(--font-mono);
+    font-size: 8px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.1s;
+    white-space: nowrap;
+  }
+  .sp-tab:hover { border-color: var(--accent2); color: var(--accent2); }
+  .sp-tab.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .sp-list { padding: 6px; display: flex; flex-direction: column; gap: 3px; }
+  .sp-item {
+    padding: 6px 8px;
+    border-radius: 3px;
+    cursor: grab;
+    border: 1px solid transparent;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    user-select: none;
+    transition: border-color 0.1s;
+  }
+  .sp-item:hover { border-color: var(--border); background: var(--bg); }
+  .sp-item:active { cursor: grabbing; }
+  .sp-item-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sp-item-meta { font-size: 8px; opacity: 0.65; margin-top: 1px; }
+  .sp-item.dragging { opacity: 0.3; }
+
+  /* SECTION EDIT BUTTON */
+  .section-edit-btn {
+    background: none; border: 1px solid var(--border2);
+    border-radius: 2px; font-family: var(--font-mono);
+    font-size: 9px; color: var(--ink3); cursor: pointer;
+    padding: 2px 7px; letter-spacing: 0.05em; transition: all 0.1s;
+  }
+  .section-edit-btn:hover { color: var(--ink); border-color: var(--border); background: var(--bg2); }
+
+  /* EDITABLE TABLE CELLS */
+  .editable-td[contenteditable="true"] { outline: none; cursor: text; }
+  .editable-td[contenteditable="true"]:focus {
+    background: rgba(29,95,168,0.06);
+    border-radius: 2px;
+    box-shadow: inset 0 0 0 1px var(--accent2);
+  }
+
+  @media (max-width: 960px) {
+    .weeks-with-panel { grid-template-columns: 1fr; }
+    .session-panel { display: none; }
+  }
 </style>
 </head>
 <body>
@@ -889,41 +977,6 @@
 
 <div class="main">
 
-  <!-- PHASES OVERVIEW -->
-  <div class="section-head"><h2>Phases</h2></div>
-  <div class="timeline">
-    <div class="tphase" style="background:rgba(91,75,168,0.07)">
-      <div class="tp-weeks">S1–S2</div>
-      <div class="tp-name" style="color:#5B4BA8">Pyrénées</div>
-      <div class="tp-bar" style="background:#5B4BA8; opacity:0.5"></div>
-    </div>
-    <div class="tphase" style="background:rgba(192,123,24,0.07)">
-      <div class="tp-weeks">S3–S4</div>
-      <div class="tp-name" style="color:#C07B18">Transition</div>
-      <div class="tp-bar" style="background:#C07B18; opacity:0.5"></div>
-    </div>
-    <div class="tphase" style="background:rgba(91,75,168,0.07)">
-      <div class="tp-weeks">S5</div>
-      <div class="tp-name" style="color:#5B4BA8">Ventoux ⛰</div>
-      <div class="tp-bar" style="background:#5B4BA8; opacity:0.5"></div>
-    </div>
-    <div class="tphase" style="background:rgba(45,122,79,0.07)">
-      <div class="tp-weeks">S6–S7</div>
-      <div class="tp-name" style="color:#2D7A4F">Construction</div>
-      <div class="tp-bar" style="background:#2D7A4F; opacity:0.5"></div>
-    </div>
-    <div class="tphase" style="background:rgba(212,82,42,0.07)">
-      <div class="tp-weeks">S8–S9</div>
-      <div class="tp-name" style="color:#D4522A">Affûtage</div>
-      <div class="tp-bar" style="background:#D4522A; opacity:0.5"></div>
-    </div>
-    <div class="tphase" style="background:rgba(212,82,42,0.12)">
-      <div class="tp-weeks">S10</div>
-      <div class="tp-name" style="color:#D4522A">Race week</div>
-      <div class="tp-bar" style="background:#D4522A"></div>
-    </div>
-  </div>
-
   <!-- LEGEND -->
   <div class="legend">
     <div class="litem"><div class="ldot" style="background:#1D5FA8"></div>Z1/Z2 Endurance</div>
@@ -936,20 +989,30 @@
 
   <!-- WEEKS -->
   <div class="section-head"><h2>Programme semaine par semaine</h2></div>
-  <div class="cal-config">
-    <div class="cal-config-group">
-      <label>Début</label>
-      <input type="date" id="cfg-start" onchange="onDateRangeChange()">
+  <div class="weeks-with-panel">
+    <div>
+      <div class="cal-config">
+        <div class="cal-config-group">
+          <label>Début</label>
+          <input type="date" id="cfg-start" onchange="onDateRangeChange()">
+        </div>
+        <div class="cal-config-group">
+          <label>Fin</label>
+          <input type="date" id="cfg-end" onchange="onDateRangeChange()">
+        </div>
+        <span id="cfg-weeks-count" class="cal-weeks-count"></span>
+      </div>
+      <div id="global-stats"></div>
+      <div class="weeks" id="weeks"></div>
+      <div style="position:relative">
+        <button class="add-week-btn" onclick="openAddWeekMenu(event)">+ Ajouter une semaine</button>
+        <div id="add-week-dd" class="phase-dd" style="display:none;position:absolute;top:calc(100% + 4px);left:0;min-width:180px" onclick="event.stopPropagation()">
+          <div id="add-week-dd-list"></div>
+        </div>
+      </div>
     </div>
-    <div class="cal-config-group">
-      <label>Fin</label>
-      <input type="date" id="cfg-end" onchange="onDateRangeChange()">
-    </div>
-    <span id="cfg-weeks-count" class="cal-weeks-count"></span>
+    <div id="session-panel" class="session-panel"></div>
   </div>
-  <div id="global-stats"></div>
-  <div class="weeks" id="weeks"></div>
-  <button class="add-week-btn" onclick="addWeek()">+ Ajouter une semaine</button>
 
   <!-- LOAD CHART -->
   <div class="section-head" style="margin-top:2rem"><h2>Progression de la charge</h2></div>
@@ -968,95 +1031,22 @@
 
   <!-- INTENSITY TABLE -->
   <div class="section-head" style="margin-top:2rem"><h2>Répartition par phase</h2></div>
-  <div class="table-section">
-    <table>
-      <thead>
-        <tr>
-          <th>Phase</th>
-          <th>Z1/Z2 Fond</th>
-          <th>Z3 Tempo</th>
-          <th>Z4 Seuil</th>
-          <th>Volume/sem.</th>
-          <th>Objectif clé</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>Pyrénées (S1–S2)</td><td>65%</td><td>25%</td><td>10%</td><td>15–18 h</td><td>D+ max, adaptation montagne</td></tr>
-        <tr><td>Transition (S3–S4)</td><td>70%</td><td>20%</td><td>10%</td><td>10–12 h</td><td>Maintien via home trainer</td></tr>
-        <tr><td>Construction (S5–S6)</td><td>70%</td><td>22%</td><td>8%</td><td>12–15 h</td><td>Sorties longues, tests</td></tr>
-        <tr><td>Ventoux (S7)</td><td>60%</td><td>30%</td><td>10%</td><td>~15 h</td><td>Simulation cols répétés</td></tr>
-        <tr><td>Affûtage (S8–S9)</td><td>75%</td><td>18%</td><td>7%</td><td>8–10 h</td><td>Fraîcheur, qualité</td></tr>
-        <tr><td>Race week (S10)</td><td>85%</td><td>10%</td><td>5%</td><td>4–5 h</td><td>Activation uniquement</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <div id="phase-table-section"></div>
 
-  <!-- HOME TRAINER TABLE -->
-  <div class="section-head" style="margin-top:2rem"><h2>Séances home trainer types</h2></div>
-  <div class="table-section">
-    <table>
-      <thead>
-        <tr><th>Séance</th><th>Durée</th><th>Zone</th><th>Description</th></tr>
-      </thead>
-      <tbody>
-        <tr><td>Col simulé</td><td>60–90 min</td><td>Z3</td><td>Résistance élevée, cadence basse (60–70 rpm) — simule montée longue</td></tr>
-        <tr><td>Endurance souple</td><td>90–120 min</td><td>Z1/Z2</td><td>Film/podcast, cadence normale, récupération active</td></tr>
-        <tr><td>Tempo bloc</td><td>75 min</td><td>Z2/Z3</td><td>20 min échauff. + 2×20 min tempo + 15 min cool down</td></tr>
-        <tr><td>Activation</td><td>30–45 min</td><td>Z1</td><td>Veille de sortie longue ou retour de grosse semaine</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <!-- SESSION TYPES TABLE -->
+  <div class="section-head" style="margin-top:2rem"><h2>Séances types</h2></div>
+  <div id="session-types-section"></div>
 
   <!-- NUTRITION SECTION -->
-  <div class="section-head" style="margin-top:2rem"><h2>Nutrition à l'effort</h2></div>
-  <div class="nutrition-grid">
-    <div class="nutri-card">
-      <h3>Stratégie glucides</h3>
-      <div class="nutri-sub">Objectif : 90–120 g/h race day</div>
-      <ul>
-        <li>Actuellement à <strong>70 g/h</strong> → bonne base</li>
-        <li>Monter à <strong>90 g/h</strong> dès les longues sorties mai</li>
-        <li>Tester <strong>100–120 g/h</strong> sur les sorties de juin</li>
-        <li>Ratio glucose/fructose <strong>2:1 impératif</strong> au-delà de 60 g/h (limite intestinale du glucose seul)</li>
-        <li>Ne pas attendre la faim : <strong>toutes les 20 min</strong> minimum</li>
-      </ul>
-    </div>
-    <div class="nutri-card">
-      <h3>Sources recommandées</h3>
-      <div class="nutri-sub">Combo solide + liquide</div>
-      <ul>
-        <li><strong>Gels maltodextrine + fructose</strong> (Maurten, SIS Beta Fuel, Näak…)</li>
-        <li><strong>Barres céréales</strong> + eau sucrée maison (fructose)</li>
-        <li><strong>Bananes + dattes</strong> pour l'aspect solide en début de course</li>
-        <li>Boisson glucidique à <strong>6–8%</strong> de concentration max (éviter l'hyperosmolarité)</li>
-        <li>Tester chaque produit à l'entraînement — jamais le jour J</li>
-      </ul>
-    </div>
-    <div class="nutri-card">
-      <h3>Hydratation</h3>
-      <div class="nutri-sub">Ariégeoise = fin juin = potentiellement chaud</div>
-      <ul>
-        <li><strong>500–800 ml/h</strong> selon chaleur et transpiration</li>
-        <li>Sodium : <strong>500–1000 mg/h</strong> en cas de chaleur ou effort > 4h</li>
-        <li>Pas de seuil de soif — boire <strong>régulièrement et petit à petit</strong></li>
-        <li>Prévoir d'utiliser les <strong>ravitaillements officiels</strong> + bidons propres au départ</li>
-      </ul>
-    </div>
-    <div class="nutri-card">
-      <h3>Avant la course</h3>
-      <div class="nutri-sub">J–2 à J0</div>
-      <ul>
-        <li><strong>J–2 :</strong> charge glucidique légère (pasta, riz, patate douce)</li>
-        <li><strong>J–1 :</strong> repas familier et digeste, éviter les fibres et gras</li>
-        <li><strong>Matin J :</strong> repas 2h30–3h avant — 100–150 g de glucides facilement digestes</li>
-        <li>Café : OK si habituel, <strong>éviter si pas coutumier</strong></li>
-      </ul>
-    </div>
+  <div class="section-head" style="margin-top:2rem">
+    <h2>Nutrition à l'effort</h2>
+    <button class="section-edit-btn" onclick="openNutriModal()">⚙ Configurer</button>
   </div>
+  <div id="nutrition-section"></div>
 
   <div class="footer">
-    <span>Ariégeoise 2026 — Plan généré en avril 2026</span>
-    <span>Vincennes → Pyrénées → Ventoux → Ariège</span>
+    <span id="footer-event"></span>
+    <span>Prépa3000 — outil de préparation sportive universelle</span>
     <button onclick="resetState()" style="background:none;border:none;font-family:var(--font-mono);font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.08em;cursor:pointer;text-decoration:underline;padding:0">Réinitialiser</button>
   </div>
 </div>
@@ -1158,6 +1148,29 @@
     <input id="phase-dd-input" type="text" placeholder="Nouvelle phase…"
            onkeydown="if(event.key==='Enter')addCustomPhase()">
     <button onclick="addCustomPhase()">+</button>
+  </div>
+</div>
+
+<div id="nutri-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeNutriModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">Nutrition — valeurs clés</span>
+      <button class="modal-close" onclick="closeNutriModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <label>Glucides cible race day</label>
+      <input id="n-carbs-target" type="text" placeholder="90–120 g/h">
+      <label>Glucides actuels à l'entraînement</label>
+      <input id="n-carbs-current" type="text" placeholder="70 g/h">
+      <label>Hydratation</label>
+      <input id="n-hydration" type="text" placeholder="500–800 ml/h">
+      <label>Sodium</label>
+      <input id="n-sodium" type="text" placeholder="500–1000 mg/h">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeNutriModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveNutriConfig()">Enregistrer</button>
+    </div>
   </div>
 </div>
 
@@ -1297,6 +1310,55 @@ const SPORT_TEMPLATES = {
   ],
 };
 
+const SESSION_LIBRARY = {
+  velo: [
+    {l:'Repos',           t:'Repos',         dur:0,   z:'Repos'},
+    {l:'Activation Z1',   t:'Activation',    dur:30,  z:'Z1'},
+    {l:'Récupération Z1', t:'Récupération',  dur:45,  z:'Z1'},
+    {l:'Endurance Z2',    t:'Endurance',     dur:120, z:'Z2'},
+    {l:'HT Endurance',    t:'HT Endurance',  dur:90,  z:'Z2'},
+    {l:'HT Tempo',        t:'HT Tempo',      dur:75,  z:'Z3'},
+    {l:'HT Col Z3',       t:'HT Col',        dur:75,  z:'Z3'},
+    {l:'Sortie longue',   t:'Test',          dur:240, z:'Mixed'},
+  ],
+  cap: [
+    {l:'Repos',           t:'Repos',         dur:0,   z:'Repos'},
+    {l:'Activation Z1',   t:'Activation',    dur:30,  z:'Z1'},
+    {l:'Récupération Z1', t:'Récupération',  dur:45,  z:'Z1'},
+    {l:'Footing Z2',      t:'Footing',       dur:60,  z:'Z2'},
+    {l:'Tempo Z3',        t:'Tempo',         dur:75,  z:'Z3'},
+    {l:'Fractionné Z4',   t:'Fractionné',    dur:60,  z:'Z4'},
+    {l:'Sortie longue',   t:'Sortie longue', dur:120, z:'Mixed'},
+    {l:'Côtes',           t:'Côtes',         dur:60,  z:'Z4'},
+  ],
+  tri: [
+    {l:'Repos',           t:'Repos',          dur:0,   z:'Repos'},
+    {l:'Activation Z1',   t:'Activation',     dur:30,  z:'Z1'},
+    {l:'Nage technique',  t:'Nage technique', dur:45,  z:'Z2'},
+    {l:'Nage endurance',  t:'Nage endurance', dur:60,  z:'Z2'},
+    {l:'Vélo seuil',      t:'Col',            dur:75,  z:'Z3'},
+    {l:'Vélo long',       t:'Endurance',      dur:180, z:'Mixed'},
+    {l:'Footing Z2',      t:'Footing',        dur:60,  z:'Z2'},
+    {l:'Brique V+CAP',    t:'Brique',         dur:90,  z:'Mixed'},
+  ],
+};
+
+const DEFAULT_PHASE_TABLE = [
+  {phase:'Pyrénées (S1–S2)',    z12:'65%', z3:'25%', z4:'10%', vol:'15–18 h', obj:'D+ max, adaptation montagne'},
+  {phase:'Transition (S3–S4)',  z12:'70%', z3:'20%', z4:'10%', vol:'10–12 h', obj:'Maintien via home trainer'},
+  {phase:'Construction (S5–S6)',z12:'70%', z3:'22%', z4:'8%',  vol:'12–15 h', obj:'Sorties longues, tests'},
+  {phase:'Ventoux (S7)',        z12:'60%', z3:'30%', z4:'10%', vol:'~15 h',   obj:'Simulation cols répétés'},
+  {phase:'Affûtage (S8–S9)',    z12:'75%', z3:'18%', z4:'7%',  vol:'8–10 h',  obj:'Fraîcheur, qualité'},
+  {phase:'Race week (S10)',     z12:'85%', z3:'10%', z4:'5%',  vol:'4–5 h',   obj:'Activation uniquement'},
+];
+
+const DEFAULT_NUTRITION = {
+  carbsTarget:  '90–120 g/h',
+  carbsCurrent: '70 g/h',
+  hydration:    '500–800 ml/h',
+  sodium:       '500–1000 mg/h',
+};
+
 const PHASE_DEFS = [
   {from:0,    to:0.25, name:'Base',         c:'#1D5FA8', b:'rgba(29,95,168,0.1)',  factor:0.75},
   {from:0.25, to:0.55, name:'Construction', c:'#2D7A4F', b:'rgba(45,122,79,0.1)',  factor:1.0},
@@ -1330,171 +1392,61 @@ function sessionColor(type, zone) {
   return ZONE_COLORS[zone]||ZONE_COLORS.Repos;
 }
 
-const INITIAL_WEEKS = [
-  {
-    num:1, label:"S1", dates:"20–26 avr", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
-    note:"Arrivée en Pyrénées le 24. Profite du D+ max dès le lendemain. Accumule les montées, reste en Z1/Z2 le matin, permets-toi du Z3 sur les cols.",
-    days:[
-      {n:"Lu",l:"Arrivée/Z1",t:"Voyage",    dur:60,  z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"Col Z3",    t:"Col",       dur:180, z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Me",l:"Col Z3",    t:"Col",       dur:180, z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Je",l:"Récup",     t:"Repos",     dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ve",l:"Z2 fond",   t:"Endurance", dur:120, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Sa",l:"Longue 5h+",t:"Test",      dur:330, z:"Mixed",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
-      {n:"Di",l:"Col Z2",    t:"Col",       dur:180, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-    ]
-  },
-  {
-    num:2, label:"S2", dates:"27 avr–3 mai", phase:"Pyrénées", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"15–18 h",
-    note:"Semaine de charge en montagne. La longue du samedi peut simuler des cols enchaînés. Dernier jour en Pyrénées : 7 mai.",
-    days:[
-      {n:"Lu",l:"Z2 fond",      t:"Endurance",  dur:120, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Ma",l:"Col Z3",       t:"Col",        dur:180, z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Me",l:"Repos/marche", t:"Repos",      dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Je",l:"Col Z2/Z3",    t:"Col",        dur:180, z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Ve",l:"Z2 fond",      t:"Endurance",  dur:120, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Sa",l:"Longue 6h",    t:"Test",       dur:360, z:"Mixed",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
-      {n:"Di",l:"Z1 récup",     t:"Récupération",dur:60, z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-    ]
-  },
-  {
-    num:3, label:"S3", dates:"4–10 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
-    note:"Retour à Paris. HT en semaine pour maintenir la condition. Première sortie longue test le week-end.",
-    days:[
-      {n:"Lu",l:"Repos",       t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"HT col 75'",  t:"HT Col",      dur:75,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Me",l:"HT endur 90'",t:"HT Endurance",dur:90,  z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Je",l:"HT tempo 75'",t:"HT Tempo",    dur:75,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Ve",l:"Repos",       t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Sa",l:"TEST 4–5h",   t:"Test",        dur:270, z:"Mixed",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
-      {n:"Di",l:"HT récup 45'",t:"Récupération",dur:45,  z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-    ]
-  },
-  {
-    num:4, label:"S4", dates:"11–17 mai", phase:"Transition", pc:"#C07B18", pb:"rgba(192,123,24,0.1)", vol:"10–12 h",
-    note:"Semaine normale à Vincennes. Charge modérée, focus sur la qualité des séances HT.",
-    days:[
-      {n:"Lu",l:"Repos",       t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"HT col 90'",  t:"HT Col",      dur:90,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Me",l:"HT endur 2h", t:"HT Endurance",dur:120, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Je",l:"HT tempo 75'",t:"HT Tempo",    dur:75,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Ve",l:"Repos",       t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Sa",l:"Longue 5h",   t:"Test",        dur:300, z:"Mixed",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
-      {n:"Di",l:"Z1 court",    t:"Récupération",dur:45,  z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-    ]
-  },
-  {
-    num:5, label:"S5", dates:"18–24 mai", phase:"Ventoux ⛰", pc:"#5B4BA8", pb:"rgba(91,75,168,0.1)", vol:"~15 h",
-    note:"Route le 22. Vélo les 23, 24 et 25 — gère l'allure sur la première montée pour enchaîner les ascensions. Repos le 26, récup douce en fin de semaine.",
-    days:[
-      {n:"Lu",l:"Route Ventoux",t:"Voyage",      dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"Ventoux vélo", t:"Événement",   dur:300, z:"Z3",   c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
-      {n:"Me",l:"Ventoux vélo", t:"Événement",   dur:300, z:"Z3",   c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
-      {n:"Je",l:"Ventoux vélo", t:"Événement",   dur:300, z:"Z3",   c:"#5B4BA8",b:"rgba(91,75,168,0.12)"},
-      {n:"Ve",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Sa",l:"Z1 retour",    t:"Endurance",   dur:60,  z:"Z1",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Di",l:"Z1 récup",     t:"Récupération",dur:60,  z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-    ]
-  },
-  {
-    num:6, label:"S6", dates:"25–31 mai", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
-    note:"Montée en charge progressive. Les sorties longues sont le cœur de cette phase.",
-    days:[
-      {n:"Lu",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"HT col 90'",   t:"HT Col",      dur:90,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Me",l:"HT endur 2h",  t:"HT Endurance",dur:120, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Je",l:"HT tempo 90'", t:"HT Tempo",    dur:90,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Ve",l:"Récup légère", t:"Récupération",dur:45,  z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Sa",l:"TEST 5–6h",    t:"Test",        dur:330, z:"Mixed",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
-      {n:"Di",l:"Z1 2h",        t:"Endurance",   dur:120, z:"Z1",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-    ]
-  },
-  {
-    num:7, label:"S7", dates:"1–7 juin", phase:"Construction", pc:"#2D7A4F", pb:"rgba(45,122,79,0.1)", vol:"12–15 h",
-    note:"Charge maximale de la préparation. La longue du samedi peut aller jusqu'à 6–7h.",
-    days:[
-      {n:"Lu",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"HT col 90'",   t:"HT Col",      dur:90,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Me",l:"HT endur 2h",  t:"HT Endurance",dur:120, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Je",l:"HT tempo 2h",  t:"HT Tempo",    dur:120, z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Ve",l:"Récup",        t:"Récupération",dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Sa",l:"TEST 6–7h",    t:"Test",        dur:390, z:"Mixed",c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
-      {n:"Di",l:"Z1 2h",        t:"Endurance",   dur:120, z:"Z1",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-    ]
-  },
-  {
-    num:8, label:"S8", dates:"8–14 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
-    note:"Début de la réduction de volume. Maintien de quelques pics d'intensité, récupération prioritaire.",
-    days:[
-      {n:"Lu",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"HT col 60'",   t:"HT Col",      dur:60,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Me",l:"HT endur 90'", t:"HT Endurance",dur:90,  z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Je",l:"HT tempo 60'", t:"HT Tempo",    dur:60,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Ve",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Sa",l:"Sortie 4h Z2", t:"Endurance",   dur:240, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Di",l:"Z1 1h30",      t:"Récupération",dur:90,  z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-    ]
-  },
-  {
-    num:9, label:"S9", dates:"15–21 juin", phase:"Affûtage", pc:"#D4522A", pb:"rgba(212,82,42,0.1)", vol:"8–10 h",
-    note:"Volume bas, intensité maîtrisée. Soigner alimentation, sommeil, et préparer le matériel.",
-    days:[
-      {n:"Lu",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"HT 45' Z2",    t:"HT Endurance",dur:45,  z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Me",l:"HT 60' + accé",t:"HT Tempo",    dur:60,  z:"Z3",   c:"#C07B18",b:"rgba(192,123,24,0.12)"},
-      {n:"Je",l:"Repos",        t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ve",l:"Activ 45'",    t:"Activation",  dur:45,  z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Sa",l:"Sortie 2h30",  t:"Endurance",   dur:150, z:"Z2",   c:"#1D5FA8",b:"rgba(29,95,168,0.12)"},
-      {n:"Di",l:"Repos complet",t:"Repos",       dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-    ]
-  },
-  {
-    num:10, label:"S10", dates:"22–28 juin", phase:"Race week 🏁", pc:"#D4522A", pb:"rgba(212,82,42,0.15)", vol:"4–5 h",
-    note:"Activations courtes uniquement. Dormir, manger, vérifier le vélo. La forme est acquise — confiance.",
-    days:[
-      {n:"Lu",l:"Repos",       t:"Repos",    dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ma",l:"Activ 30'",   t:"Activation",dur:30, z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Me",l:"Repos",       t:"Repos",    dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Je",l:"Activ 30'",   t:"Activation",dur:30, z:"Z1",   c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Ve",l:"Repos",       t:"Repos",    dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Sa",l:"Repos/trajet",t:"Voyage",   dur:0,   z:"Repos",c:"#7A7670",b:"rgba(122,118,112,0.1)"},
-      {n:"Di",l:"🏁 COURSE",   t:"Événement",dur:480, z:"Mixed",c:"#D4522A",b:"rgba(212,82,42,0.15)"},
-    ]
-  },
-];
 
 // ── STATE ──────────────────────────────────────────────────────────────────
-const DEFAULT_CONFIG = {
-  startDate:'2026-04-20', endDate:'2026-06-28', customPhases:[],
-  event: {
-    name:"L'Ariégeoise 2026", sport:'velo',
-    distance:'184 km', denivele:'~4 000 m', pointsCles:'3 cols', temps:'7–9 h'
-  },
-  constraints: { days:[true,true,true,true,true,true,true], weeklyVolume:12 }
-};
+function _nextMonday() {
+  const d = new Date(); const day = d.getDay();
+  d.setDate(d.getDate() + (day === 1 ? 0 : day === 0 ? 1 : 8 - day));
+  return d.toISOString().split('T')[0];
+}
+function makeDefaultWeeks() {
+  const weeks = [];
+  for (let i = 0; i < 4; i++) {
+    const mon = new Date(_nextMonday() + 'T12:00:00'); mon.setDate(mon.getDate() + i * 7);
+    const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+    const monISO = mon.toISOString().split('T')[0];
+    const sunISO = sun.toISOString().split('T')[0];
+    weeks.push({
+      num: i+1, label:`S${i+1}`, dates: formatWeekDates(monISO, sunISO),
+      phase:'Base', pc:'#1D5FA8', pb:'rgba(29,95,168,0.1)', note:'',
+      days: ['Lu','Ma','Me','Je','Ve','Sa','Di'].map(n => ({n, l:'Repos', t:'Repos', dur:0, z:'Repos', c:'#7A7670', b:'rgba(122,118,112,0.1)', done:false, desc:''}))
+    });
+  }
+  return weeks;
+}
+function makeDefaultConfig() {
+  const start = _nextMonday();
+  const endD  = new Date(start + 'T12:00:00'); endD.setDate(endD.getDate() + 27);
+  return {
+    startDate: start,
+    endDate:   endD.toISOString().split('T')[0],
+    customPhases: [],
+    event: { name:'', sport:'velo' },
+    constraints: { days:[true,true,true,true,true,true,true], weeklyVolume:10 },
+    nutrition: {...DEFAULT_NUTRITION}
+  };
+}
 
 function initState() {
   try {
     const s = localStorage.getItem('ariegeoise-v2');
     if (s) {
       const p = JSON.parse(s);
-      p.weeks.forEach((w, i) => {
-        if (INITIAL_WEEKS[i]) w.dates = INITIAL_WEEKS[i].dates;
+      p.weeks.forEach(w => {
         w.days.forEach(d => {
           if (d.done===undefined) d.done=false;
           if (d.desc===undefined) d.desc='';
         });
       });
-      if (!p.config) p.config = {...DEFAULT_CONFIG};
-      if (!p.config.customPhases) p.config.customPhases = [];
-      if (!p.config.event) p.config.event = {...DEFAULT_CONFIG.event};
-      if (!p.config.constraints) p.config.constraints = {...DEFAULT_CONFIG.constraints};
+      if (!p.config)                   p.config = makeDefaultConfig();
+      if (!p.config.customPhases)      p.config.customPhases = [];
+      if (!p.config.event)             p.config.event = { name:'', sport:'velo' };
+      if (!p.config.constraints)       p.config.constraints = { days:[true,true,true,true,true,true,true], weeklyVolume:10 };
+      if (!p.config.nutrition)         p.config.nutrition = {...DEFAULT_NUTRITION};
       return p;
     }
   } catch(e) {}
-  const w = JSON.parse(JSON.stringify(INITIAL_WEEKS));
-  w.forEach(wk => wk.days.forEach(d => { d.done=false; d.desc=''; }));
-  return { weeks: w, config: {...DEFAULT_CONFIG} };
+  return { weeks: makeDefaultWeeks(), config: makeDefaultConfig() };
 }
 let state = initState();
 function saveState() { localStorage.setItem('ariegeoise-v2', JSON.stringify(state)); }
@@ -1502,7 +1454,7 @@ function saveState() { localStorage.setItem('ariegeoise-v2', JSON.stringify(stat
 // ── DRAG & DROP ────────────────────────────────────────────────────────────
 let dragSrc = null;
 function onDragStart(e, wi, di) {
-  dragSrc = {wi, di};
+  dragSrc = {type:'week', wi, di};
   e.dataTransfer.effectAllowed = 'move';
   setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
 }
@@ -1512,13 +1464,28 @@ function onDragLeave(e)  { e.currentTarget.classList.remove('drag-over'); }
 function onDrop(e, wi, di) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
-  if (!dragSrc || (dragSrc.wi===wi && dragSrc.di===di)) { dragSrc=null; return; }
+  if (!dragSrc) return;
+  if (dragSrc.type === 'lib') {
+    const s = dragSrc.session;
+    const d = state.weeks[wi].days[di];
+    d.l=s.l; d.t=s.t; d.dur=s.dur; d.z=s.z; d.c=s.c; d.b=s.b;
+    dragSrc = null; saveState(); render(); return;
+  }
+  if (dragSrc.wi===wi && dragSrc.di===di) { dragSrc=null; return; }
   const s = state.weeks[dragSrc.wi].days[dragSrc.di];
   const d = state.weeks[wi].days[di];
   ['l','t','dur','z','c','b','done'].forEach(f => { [s[f],d[f]]=[d[f],s[f]]; });
   dragSrc = null;
   saveState(); render();
 }
+function onPanelDragStart(e, idx) {
+  const s = _panelLib[idx];
+  const col = sessionColor(s.t, s.z);
+  dragSrc = {type:'lib', session:{...s, c:col.c, b:col.b, done:false, desc:''}};
+  e.dataTransfer.effectAllowed = 'copy';
+  setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
+}
+function onPanelDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
 
 // ── DONE TOGGLE ────────────────────────────────────────────────────────────
 function toggleDone(e, wi, di) {
@@ -1567,7 +1534,7 @@ function resetState() {
 }
 
 // ── RENDER ─────────────────────────────────────────────────────────────────
-function render() { renderMasthead(); renderCalendarConfig(); renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); }
+function render() { renderMasthead(); renderCalendarConfig(); renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); renderSessionPanel(); renderPhaseTable(); renderSessionTypes(); renderNutrition(); }
 
 function getEventStats(ev) {
   const s = [];
@@ -1594,7 +1561,9 @@ function getEventStats(ev) {
 function renderMasthead() {
   const ev = state.config.event || {};
   const nameEl = document.getElementById('mh-event-name');
-  if (nameEl) nameEl.textContent = ev.name || '—';
+  if (nameEl) nameEl.textContent = ev.name || '— Configurer via ⚙';
+  const footerEl = document.getElementById('footer-event');
+  if (footerEl) footerEl.textContent = ev.name ? `${ev.name} · ${state.weeks.length} semaines` : '';
   const statsEl = document.getElementById('mh-stats');
   if (!statsEl) return;
   statsEl.innerHTML = getEventStats(ev).map((s,i) =>
@@ -1752,6 +1721,171 @@ function renderAdaptations() {
       <div class="adapt-vals"><span>${dn.high} / ${pl.high} pts</span><span class="adapt-pct">${pct(dn.high,pl.high)}%</span></div>
     </div>`:''}
   </div>`;
+}
+
+// ── SESSION PANEL ─────────────────────────────────────────────────────────
+let _panelSport = null;
+let _panelLib   = [];
+
+function renderSessionPanel() {
+  const el = document.getElementById('session-panel');
+  if (!el) return;
+  const sport = _panelSport || state.config.event?.sport || 'velo';
+  _panelLib = SESSION_LIBRARY[sport] || SESSION_LIBRARY.velo;
+  const tabs = [{key:'velo',lbl:'🚴 Vélo'},{key:'cap',lbl:'🏃 CAP'},{key:'tri',lbl:'🏊 Tri'}];
+  el.innerHTML = `
+    <div class="sp-header">
+      <div class="sp-title">Bibliothèque de séances</div>
+      <div class="sp-tabs">
+        ${tabs.map(t => `<button class="sp-tab ${sport===t.key?'active':''}" onclick="selectPanelSport('${t.key}')">${t.lbl}</button>`).join('')}
+      </div>
+    </div>
+    <div class="sp-list">
+      ${_panelLib.map((s,i) => {
+        const col = sessionColor(s.t, s.z);
+        return `<div class="sp-item" style="color:${col.c};background:${col.b}"
+          draggable="true"
+          ondragstart="onPanelDragStart(event,${i})"
+          ondragend="onPanelDragEnd(event)">
+          <div class="sp-item-name">${s.l}</div>
+          <div class="sp-item-meta">${s.z!=='Repos'?formatDur(s.dur)+' · ':''}${s.z}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function selectPanelSport(sport) {
+  _panelSport = sport;
+  renderSessionPanel();
+}
+
+// ── PHASE TABLE ────────────────────────────────────────────────────────────
+function renderPhaseTable() {
+  const el = document.getElementById('phase-table-section');
+  if (!el) return;
+  // Group weeks by phase, preserving encounter order
+  const phaseMap = new Map();
+  state.weeks.forEach(w => {
+    const key = w.phase;
+    if (!phaseMap.has(key)) phaseMap.set(key, {name:w.phase, pc:w.pc, weeks:[], load:{base:0,threshold:0,high:0,total:0}, dur:0});
+    const g = phaseMap.get(key);
+    g.weeks.push(w.label);
+    g.dur += sumDurDays(w.days);
+    const l = sumLoad(w.days);
+    g.load.base+=l.base; g.load.threshold+=l.threshold; g.load.high+=l.high; g.load.total+=l.total;
+  });
+  if (phaseMap.size === 0) {
+    el.innerHTML = '<p style="font-size:12px;color:var(--ink3);padding:8px 0">Aucune semaine planifiée.</p>';
+    return;
+  }
+  const rows = [...phaseMap.values()].map(g => {
+    const t = g.load.total || 1;
+    const z12 = Math.round(g.load.base / t * 100);
+    const z3  = Math.round(g.load.threshold / t * 100);
+    const z4  = Math.round(g.load.high / t * 100);
+    const wRange = g.weeks.length > 1 ? `${g.weeks[0]}–${g.weeks[g.weeks.length-1]}` : g.weeks[0];
+    return `<tr>
+      <td><span style="color:${g.pc};font-weight:700">${g.name}</span>
+          <div style="font-family:var(--font-mono);font-size:9px;color:var(--ink3);margin-top:1px">${wRange} · ${g.weeks.length} sem.</div></td>
+      <td>${z12}%</td><td>${z3}%</td><td>${z4}%</td>
+      <td style="font-weight:600">${formatDur(g.dur)}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `<div class="table-section"><table>
+    <thead><tr><th>Phase</th><th>Z1/Z2 Fond</th><th>Z3 Tempo</th><th>Z4 Seuil</th><th>Volume total</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>`;
+}
+
+// ── SESSION TYPES TABLE ────────────────────────────────────────────────────
+function renderSessionTypes() {
+  const el = document.getElementById('session-types-section');
+  if (!el) return;
+  const sport = state.config.event?.sport || 'velo';
+  const lib   = SESSION_LIBRARY[sport] || SESSION_LIBRARY.velo;
+  const nonRest = lib.filter(s => s.z !== 'Repos');
+  el.innerHTML = `<div class="table-section"><table>
+    <thead><tr><th>Séance</th><th>Durée</th><th>Zone</th></tr></thead>
+    <tbody>
+      ${nonRest.map(s => {
+        const col = sessionColor(s.t, s.z);
+        return `<tr>
+          <td>${s.l}</td>
+          <td>${formatDur(s.dur)}</td>
+          <td style="color:${col.c};font-weight:600">${s.z}</td>
+        </tr>`;
+      }).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+// ── NUTRITION ──────────────────────────────────────────────────────────────
+function renderNutrition() {
+  const el = document.getElementById('nutrition-section');
+  if (!el) return;
+  const n = state.config.nutrition || DEFAULT_NUTRITION;
+  el.innerHTML = `<div class="nutrition-grid">
+    <div class="nutri-card">
+      <h3>Stratégie glucides</h3>
+      <div class="nutri-sub">Objectif : ${n.carbsTarget} race day</div>
+      <ul>
+        <li>Actuellement à <strong>${n.carbsCurrent}</strong> → bonne base</li>
+        <li>Progresser vers <strong>${n.carbsTarget}</strong> sur les longues sorties</li>
+        <li>Ratio glucose/fructose <strong>2:1 impératif</strong> au-delà de 60 g/h</li>
+        <li>Ne pas attendre la faim : <strong>toutes les 20 min</strong> minimum</li>
+      </ul>
+    </div>
+    <div class="nutri-card">
+      <h3>Sources recommandées</h3>
+      <div class="nutri-sub">Combo solide + liquide</div>
+      <ul>
+        <li><strong>Gels maltodextrine + fructose</strong> (Maurten, SIS Beta Fuel, Näak…)</li>
+        <li><strong>Barres céréales</strong> + eau sucrée maison (fructose)</li>
+        <li><strong>Bananes + dattes</strong> pour l'aspect solide en début de course</li>
+        <li>Boisson glucidique à <strong>6–8%</strong> de concentration max</li>
+        <li>Tester chaque produit à l'entraînement — jamais le jour J</li>
+      </ul>
+    </div>
+    <div class="nutri-card">
+      <h3>Hydratation</h3>
+      <div class="nutri-sub">${n.hydration} selon chaleur et transpiration</div>
+      <ul>
+        <li><strong>${n.hydration}</strong> selon chaleur et transpiration</li>
+        <li>Sodium : <strong>${n.sodium}</strong> en cas de chaleur ou effort > 4h</li>
+        <li>Pas de seuil de soif — boire <strong>régulièrement et petit à petit</strong></li>
+        <li>Prévoir les <strong>ravitaillements officiels</strong> + bidons propres au départ</li>
+      </ul>
+    </div>
+    <div class="nutri-card">
+      <h3>Avant la course</h3>
+      <div class="nutri-sub">J–2 à J0</div>
+      <ul>
+        <li><strong>J–2 :</strong> charge glucidique légère (pasta, riz, patate douce)</li>
+        <li><strong>J–1 :</strong> repas familier et digeste, éviter les fibres et gras</li>
+        <li><strong>Matin J :</strong> repas 2h30–3h avant — 100–150 g de glucides</li>
+        <li>Café : OK si habituel, <strong>éviter si pas coutumier</strong></li>
+      </ul>
+    </div>
+  </div>`;
+}
+
+function openNutriModal() {
+  const n = state.config.nutrition || DEFAULT_NUTRITION;
+  document.getElementById('n-carbs-target').value  = n.carbsTarget  || '';
+  document.getElementById('n-carbs-current').value = n.carbsCurrent || '';
+  document.getElementById('n-hydration').value     = n.hydration    || '';
+  document.getElementById('n-sodium').value        = n.sodium       || '';
+  document.getElementById('nutri-modal').style.display = 'flex';
+}
+function closeNutriModal() { document.getElementById('nutri-modal').style.display = 'none'; }
+function saveNutriConfig() {
+  state.config.nutrition = {
+    carbsTarget:  document.getElementById('n-carbs-target').value.trim()  || DEFAULT_NUTRITION.carbsTarget,
+    carbsCurrent: document.getElementById('n-carbs-current').value.trim() || DEFAULT_NUTRITION.carbsCurrent,
+    hydration:    document.getElementById('n-hydration').value.trim()     || DEFAULT_NUTRITION.hydration,
+    sodium:       document.getElementById('n-sodium').value.trim()        || DEFAULT_NUTRITION.sodium,
+  };
+  saveState(); closeNutriModal(); renderNutrition();
 }
 
 // ── EVENT CONFIG ───────────────────────────────────────────────────────────
@@ -1915,7 +2049,11 @@ function closePhaseDropdown() {
   document.getElementById('phase-dd').style.display = 'none';
   _phaseTarget = null;
 }
-document.addEventListener('click', closePhaseDropdown);
+document.addEventListener('click', () => {
+  closePhaseDropdown();
+  const dd = document.getElementById('add-week-dd');
+  if (dd) dd.style.display = 'none';
+});
 
 // ── DATE RANGE ─────────────────────────────────────────────────────────────
 function onDateRangeChange() {
@@ -1966,7 +2104,24 @@ function regenerateWeeks(startISO, endISO) {
   state.config.startDate = startISO;
   state.config.endDate   = endISO;
 }
-function addWeek() {
+function openAddWeekMenu(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('add-week-dd');
+  if (dd.style.display !== 'none') { dd.style.display = 'none'; return; }
+  const custom = state.config.customPhases || [];
+  const seen = new Set(PHASES.map(p => p.name));
+  const all = [...PHASES, ...custom.filter(p => !seen.has(p.name))];
+  document.getElementById('add-week-dd-list').innerHTML = all.map((p, i) =>
+    `<div class="phase-dd-item" onclick="addWeekWithPhase(${i})" style="color:${p.c}">${p.name}</div>`
+  ).join('');
+  dd.style.display = 'block';
+}
+function addWeekWithPhase(phaseIdx) {
+  const custom = state.config.customPhases || [];
+  const seen = new Set(PHASES.map(p => p.name));
+  const all = [...PHASES, ...custom.filter(p => !seen.has(p.name))];
+  const phase = all[phaseIdx];
+  document.getElementById('add-week-dd').style.display = 'none';
   const last = state.weeks[state.weeks.length - 1];
   const lastEnd = new Date(state.config.endDate + 'T12:00:00');
   const nextMon = new Date(lastEnd); nextMon.setDate(nextMon.getDate() + 1);
@@ -1977,7 +2132,7 @@ function addWeek() {
   const num = state.weeks.length + 1;
   state.weeks.push({
     num, label:`S${num}`, dates: formatWeekDates(monISO, sunISO),
-    phase: last.phase, pc: last.pc, pb: last.pb, note:'',
+    phase: phase.name, pc: phase.c, pb: phase.b, note:'',
     days: last.days.map(d => ({...d, done:false, desc:''}))
   });
   saveState(); render();
