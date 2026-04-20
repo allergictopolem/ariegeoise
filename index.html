@@ -1419,7 +1419,7 @@ function renderWeeks() {
           <div class="week-num">Semaine ${w.num}</div>
           <div class="week-dates">${w.dates}</div>
           <div class="week-phase" style="color:${w.pc};background:${w.pb}"
-               onclick="openPhaseDropdown(${wi},this)">${w.phase} ▾</div>
+               onclick="event.stopPropagation();openPhaseDropdown(${wi},this)">${w.phase} ▾</div>
           <div class="week-volume">${formatDur(sumDurDays(w.days))}</div>
           <div class="week-load">
             <div class="wl-header">
