@@ -209,7 +209,10 @@
     letter-spacing: 0.08em;
     margin-top: 2px;
     width: fit-content;
+    cursor: pointer;
+    user-select: none;
   }
+  .week-phase:hover { filter: brightness(0.93); }
   .week-volume {
     font-family: var(--font-mono);
     font-size: 10px;
@@ -664,6 +667,120 @@
     line-height: 1;
   }
 
+  /* CALENDAR CONFIG */
+  .cal-config {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 4px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+  }
+  .cal-config-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cal-config-group label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink3);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .cal-config-group input[type="date"] {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--ink);
+    outline: none;
+    cursor: pointer;
+  }
+  .cal-config-group input[type="date"]:focus { border-color: var(--accent2); }
+  .cal-weeks-count {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink3);
+    margin-left: 4px;
+  }
+
+  /* ADD WEEK BUTTON */
+  .add-week-btn {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 9px;
+    border: 1px dashed var(--border);
+    border-radius: 4px;
+    background: none;
+    color: var(--ink3);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .add-week-btn:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(29,95,168,0.04); }
+
+  /* PHASE DROPDOWN */
+  .phase-dd {
+    position: absolute;
+    z-index: 400;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    min-width: 170px;
+    overflow: hidden;
+  }
+  .phase-dd-item {
+    padding: 7px 12px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+  }
+  .phase-dd-item:hover { background: var(--bg2); }
+  .phase-dd-add {
+    display: flex;
+    gap: 4px;
+    padding: 6px 8px;
+    border-top: 1px solid var(--border2);
+    background: var(--bg2);
+  }
+  .phase-dd-add input {
+    flex: 1;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 12px;
+    outline: none;
+  }
+  .phase-dd-add input:focus { border-color: var(--accent2); }
+  .phase-dd-add button {
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--ink);
+    color: var(--bg);
+    font-size: 14px;
+    cursor: pointer;
+    line-height: 1;
+  }
+
   /* PRINT */
   @media print {
     body { background: white; }
@@ -764,8 +881,20 @@
 
   <!-- WEEKS -->
   <div class="section-head"><h2>Programme semaine par semaine</h2></div>
+  <div class="cal-config">
+    <div class="cal-config-group">
+      <label>Début</label>
+      <input type="date" id="cfg-start" onchange="onDateRangeChange()">
+    </div>
+    <div class="cal-config-group">
+      <label>Fin</label>
+      <input type="date" id="cfg-end" onchange="onDateRangeChange()">
+    </div>
+    <span id="cfg-weeks-count" class="cal-weeks-count"></span>
+  </div>
   <div id="global-stats"></div>
   <div class="weeks" id="weeks"></div>
+  <button class="add-week-btn" onclick="addWeek()">+ Ajouter une semaine</button>
 
   <!-- LOAD CHART -->
   <div class="section-head" style="margin-top:2rem"><h2>Progression de la charge</h2></div>
@@ -877,6 +1006,15 @@
   </div>
 </div>
 
+<div id="phase-dd" class="phase-dd" style="display:none" onclick="event.stopPropagation()">
+  <div id="phase-dd-list"></div>
+  <div class="phase-dd-add">
+    <input id="phase-dd-input" type="text" placeholder="Nouvelle phase…"
+           onkeydown="if(event.key==='Enter')addCustomPhase()">
+    <button onclick="addCustomPhase()">+</button>
+  </div>
+</div>
+
 <div id="modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-header">
@@ -916,6 +1054,25 @@
 
 <script>
 const LOAD_FACTORS = { Z1:30, Z2:50, Z3:75, Z4:100, Mixed:60, Repos:0 };
+
+const PHASES = [
+  {name:'Pyrénées',    c:'#5B4BA8', b:'rgba(91,75,168,0.1)'},
+  {name:'Ventoux',     c:'#5B4BA8', b:'rgba(91,75,168,0.1)'},
+  {name:'Transition',  c:'#C07B18', b:'rgba(192,123,24,0.1)'},
+  {name:'Construction',c:'#2D7A4F', b:'rgba(45,122,79,0.1)'},
+  {name:'Affûtage',    c:'#D4522A', b:'rgba(212,82,42,0.1)'},
+  {name:'Race week 🏁',c:'#D4522A', b:'rgba(212,82,42,0.15)'},
+  {name:'Base',        c:'#1D5FA8', b:'rgba(29,95,168,0.1)'},
+  {name:'Récupération',c:'#7A7670', b:'rgba(122,118,112,0.1)'},
+];
+const PHASE_PALETTE = [
+  {c:'#5B4BA8', b:'rgba(91,75,168,0.1)'},
+  {c:'#1D5FA8', b:'rgba(29,95,168,0.1)'},
+  {c:'#2D7A4F', b:'rgba(45,122,79,0.1)'},
+  {c:'#C07B18', b:'rgba(192,123,24,0.1)'},
+  {c:'#D4522A', b:'rgba(212,82,42,0.1)'},
+  {c:'#7A7670', b:'rgba(122,118,112,0.1)'},
+];
 const ZONE_COLORS = {
   Repos:{c:"#7A7670",b:"rgba(122,118,112,0.1)"},
   Z1:   {c:"#7A7670",b:"rgba(122,118,112,0.1)"},
@@ -924,6 +1081,24 @@ const ZONE_COLORS = {
   Z4:   {c:"#D4522A",b:"rgba(212,82,42,0.12)"},
   Mixed:{c:"#2D7A4F",b:"rgba(45,122,79,0.12)"},
 };
+
+const MONTHS_FR = ['jan','fév','mar','avr','mai','juin','juil','août','sep','oct','nov','déc'];
+function formatWeekDates(monISO, sunISO) {
+  const s = new Date(monISO + 'T12:00:00'), e = new Date(sunISO + 'T12:00:00');
+  const sd = s.getDate(), sm = MONTHS_FR[s.getMonth()];
+  const ed = e.getDate(), em = MONTHS_FR[e.getMonth()];
+  return sm === em ? `${sd}–${ed} ${em}` : `${sd} ${sm}–${ed} ${em}`;
+}
+function snapToMonday(iso) {
+  const d = new Date(iso + 'T12:00:00'), day = d.getDay();
+  d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+  return d.toISOString().split('T')[0];
+}
+function snapToSunday(iso) {
+  const d = new Date(iso + 'T12:00:00'), day = d.getDay();
+  d.setDate(d.getDate() + (day === 0 ? 0 : 7 - day));
+  return d.toISOString().split('T')[0];
+}
 
 function formatDur(min) {
   if (!min) return '0h';
@@ -1084,6 +1259,8 @@ const INITIAL_WEEKS = [
 ];
 
 // ── STATE ──────────────────────────────────────────────────────────────────
+const DEFAULT_CONFIG = { startDate:'2026-04-20', endDate:'2026-06-28', customPhases:[] };
+
 function initState() {
   try {
     const s = localStorage.getItem('ariegeoise-v2');
@@ -1096,12 +1273,14 @@ function initState() {
           if (d.desc===undefined) d.desc='';
         });
       });
+      if (!p.config) p.config = {...DEFAULT_CONFIG};
+      if (!p.config.customPhases) p.config.customPhases = [];
       return p;
     }
   } catch(e) {}
   const w = JSON.parse(JSON.stringify(INITIAL_WEEKS));
   w.forEach(wk => wk.days.forEach(d => { d.done=false; d.desc=''; }));
-  return { weeks: w };
+  return { weeks: w, config: {...DEFAULT_CONFIG} };
 }
 let state = initState();
 function saveState() { localStorage.setItem('ariegeoise-v2', JSON.stringify(state)); }
@@ -1174,7 +1353,16 @@ function resetState() {
 }
 
 // ── RENDER ─────────────────────────────────────────────────────────────────
-function render() { renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); }
+function render() { renderCalendarConfig(); renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); }
+
+function renderCalendarConfig() {
+  const s = document.getElementById('cfg-start');
+  const e = document.getElementById('cfg-end');
+  const c = document.getElementById('cfg-weeks-count');
+  if (s) s.value = state.config.startDate;
+  if (e) e.value = state.config.endDate;
+  if (c) c.textContent = `${state.weeks.length} semaine${state.weeks.length > 1 ? 's' : ''}`;
+}
 
 function renderGlobalStats() {
   const el = document.getElementById('global-stats');
@@ -1230,7 +1418,8 @@ function renderWeeks() {
         <div class="week-meta">
           <div class="week-num">Semaine ${w.num}</div>
           <div class="week-dates">${w.dates}</div>
-          <div class="week-phase" style="color:${w.pc};background:${w.pb}">${w.phase}</div>
+          <div class="week-phase" style="color:${w.pc};background:${w.pb}"
+               onclick="openPhaseDropdown(${wi},this)">${w.phase} ▾</div>
           <div class="week-volume">${formatDur(sumDurDays(w.days))}</div>
           <div class="week-load">
             <div class="wl-header">
@@ -1316,6 +1505,117 @@ function renderAdaptations() {
       <div class="adapt-vals"><span>${dn.high} / ${pl.high} pts</span><span class="adapt-pct">${pct(dn.high,pl.high)}%</span></div>
     </div>`:''}
   </div>`;
+}
+
+// ── PHASE DROPDOWN ────────────────────────────────────────────────────────
+let _phaseTarget = null, _ddPhases = [];
+
+function openPhaseDropdown(wi, el) {
+  _phaseTarget = wi;
+  const custom = state.config.customPhases || [];
+  const seen = new Set(PHASES.map(p => p.name));
+  _ddPhases = [...PHASES, ...custom.filter(p => !seen.has(p.name))];
+  document.getElementById('phase-dd-list').innerHTML = _ddPhases.map((p, i) =>
+    `<div class="phase-dd-item" onclick="selectPhase(${wi},${i})" style="color:${p.c}">${p.name}</div>`
+  ).join('');
+  document.getElementById('phase-dd-input').value = '';
+  const rect = el.getBoundingClientRect();
+  const dd = document.getElementById('phase-dd');
+  dd.style.display = 'block';
+  dd.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
+  dd.style.left = rect.left + 'px';
+}
+function selectPhase(wi, idx) {
+  const p = _ddPhases[idx];
+  state.weeks[wi].phase = p.name;
+  state.weeks[wi].pc = p.c;
+  state.weeks[wi].pb = p.b;
+  closePhaseDropdown();
+  saveState(); render();
+}
+function addCustomPhase() {
+  const name = document.getElementById('phase-dd-input').value.trim();
+  if (!name || _phaseTarget === null) return;
+  if (!state.config.customPhases) state.config.customPhases = [];
+  const p = PHASE_PALETTE[state.config.customPhases.length % PHASE_PALETTE.length];
+  const custom = {name, c: p.c, b: p.b};
+  state.config.customPhases.push(custom);
+  state.weeks[_phaseTarget].phase = name;
+  state.weeks[_phaseTarget].pc = p.c;
+  state.weeks[_phaseTarget].pb = p.b;
+  closePhaseDropdown();
+  saveState(); render();
+}
+function closePhaseDropdown() {
+  document.getElementById('phase-dd').style.display = 'none';
+  _phaseTarget = null;
+}
+document.addEventListener('click', closePhaseDropdown);
+
+// ── DATE RANGE ─────────────────────────────────────────────────────────────
+function onDateRangeChange() {
+  const startVal = document.getElementById('cfg-start').value;
+  const endVal   = document.getElementById('cfg-end').value;
+  if (!startVal || !endVal) return;
+  const startISO = snapToMonday(startVal);
+  const endISO   = snapToSunday(endVal);
+  document.getElementById('cfg-start').value = startISO;
+  document.getElementById('cfg-end').value   = endISO;
+  if (new Date(startISO) > new Date(endISO)) return;
+  // Warn if weeks would be removed
+  const cur = new Date(startISO), end = new Date(endISO);
+  let count = 0; const tmp = new Date(cur);
+  while (tmp <= end) { count++; tmp.setDate(tmp.getDate() + 7); }
+  if (count < state.weeks.length) {
+    if (!confirm(`Cela supprimera ${state.weeks.length - count} semaine(s) et leurs données. Continuer ?`)) {
+      renderCalendarConfig(); return;
+    }
+  }
+  regenerateWeeks(startISO, endISO);
+  saveState(); render();
+}
+function regenerateWeeks(startISO, endISO) {
+  const existing = state.weeks;
+  const newWeeks = [];
+  const cur = new Date(startISO + 'T12:00:00');
+  const end = new Date(endISO   + 'T12:00:00');
+  let i = 0;
+  while (cur <= end) {
+    const sun = new Date(cur); sun.setDate(sun.getDate() + 6);
+    const monISO2 = cur.toISOString().split('T')[0];
+    const sunISO2 = sun.toISOString().split('T')[0];
+    const dates = formatWeekDates(monISO2, sunISO2);
+    const num = i + 1; const label = `S${num}`;
+    if (existing[i]) {
+      newWeeks.push({...existing[i], num, label, dates});
+    } else {
+      const prev = newWeeks[i - 1] || existing[existing.length - 1];
+      const days = prev
+        ? prev.days.map(d => ({...d, done:false, desc:''}))
+        : ['Lu','Ma','Me','Je','Ve','Sa','Di'].map(n => ({n,l:'Repos',t:'Repos',dur:0,z:'Repos',c:'#7A7670',b:'rgba(122,118,112,0.1)',done:false,desc:''}));
+      newWeeks.push({num, label, dates, phase:prev?.phase||'Base', pc:prev?.pc||'#1D5FA8', pb:prev?.pb||'rgba(29,95,168,0.1)', note:'', days});
+    }
+    i++; cur.setDate(cur.getDate() + 7);
+  }
+  state.weeks = newWeeks;
+  state.config.startDate = startISO;
+  state.config.endDate   = endISO;
+}
+function addWeek() {
+  const last = state.weeks[state.weeks.length - 1];
+  const lastEnd = new Date(state.config.endDate + 'T12:00:00');
+  const nextMon = new Date(lastEnd); nextMon.setDate(nextMon.getDate() + 1);
+  const nextSun = new Date(nextMon); nextSun.setDate(nextSun.getDate() + 6);
+  const monISO = nextMon.toISOString().split('T')[0];
+  const sunISO = nextSun.toISOString().split('T')[0];
+  state.config.endDate = sunISO;
+  const num = state.weeks.length + 1;
+  state.weeks.push({
+    num, label:`S${num}`, dates: formatWeekDates(monISO, sunISO),
+    phase: last.phase, pc: last.pc, pb: last.pb, note:'',
+    days: last.days.map(d => ({...d, done:false, desc:''}))
+  });
+  saveState(); render();
 }
 
 // ── WEEK NOTE EDITING ──────────────────────────────────────────────────────
