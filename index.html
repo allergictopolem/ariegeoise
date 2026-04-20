@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Prépa3000 — Plan de préparation sportive</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@800&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%23141210'/><polygon points='4,28 15,7 26,28' fill='%233A9ED4'/><polygon points='13,28 23,14 32,28' fill='%23F5C518' opacity='.9'/><polygon points='12,11 15,7 18,11' fill='white' opacity='.9'/></svg>">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -47,7 +48,7 @@
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 3px;
-    background: linear-gradient(90deg, var(--accent) 0%, #f0a030 45%, var(--purple) 100%);
+    background: linear-gradient(90deg, #F5C518 0%, #3A9ED4 55%, #1D5FA8 100%);
   }
   .masthead-wm {
     position: absolute;
@@ -84,17 +85,18 @@
     margin-bottom: 1rem;
   }
   .masthead-title {
+    font-family: 'Nunito', var(--font-display);
     font-size: clamp(2.4rem, 6vw, 4.2rem);
     font-weight: 800;
     line-height: 1;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.03em;
     margin-bottom: 0.4rem;
   }
   .masthead-title .t-name { color: rgba(255,255,255,0.92); }
   .masthead-title .t-num  {
-    color: var(--accent);
+    color: #F5C518;
     font-size: 1.15em;
-    letter-spacing: -0.05em;
+    letter-spacing: -0.04em;
   }
   .masthead-sub {
     font-size: 0.9rem;
@@ -115,8 +117,8 @@
     font-size: 9px;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: var(--accent);
-    border: 1px solid rgba(212,82,42,0.4);
+    color: #F5C518;
+    border: 1px solid rgba(245,197,24,0.4);
     padding: 2px 7px;
     border-radius: 2px;
   }
@@ -862,11 +864,58 @@
     .week:hover { box-shadow: none; }
   }
 
+  /* RUNNING PACE */
+  .day-pace {
+    display: block;
+    font-size: 7px;
+    opacity: 0.75;
+    margin-top: 1px;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   @media (max-width: 600px) {
+    .masthead { padding: 1.5rem 0 1.4rem; }
     .masthead, .main { padding-left: 1.25rem; padding-right: 1.25rem; }
-    .week-top { grid-template-columns: 110px 1fr; }
-    .masthead-stats { gap: 1rem; }
-    .mstat-val { font-size: 1.1rem; }
+    .masthead-wm { display: none; }
+    .masthead-sub { display: none; }
+    .masthead-stats { gap: 0.75rem; flex-wrap: wrap; }
+    .mstat-val { font-size: 1rem; }
+    .masthead-event-row { flex-wrap: wrap; gap: 6px; }
+    .main { padding: 1rem 1.25rem 3rem; }
+
+    /* Weeks: meta as compact strip, days scroll horizontally */
+    .week-top { grid-template-columns: 1fr; }
+    .week-meta {
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px 10px;
+      padding: 8px 10px;
+      border-right: none;
+      border-bottom: 1px solid var(--border2);
+    }
+    .week-num { display: none; }
+    .week-load { display: none; }
+    .week-days {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      padding: 8px;
+      grid-template-columns: repeat(7, minmax(60px, 1fr));
+    }
+    .week-days::-webkit-scrollbar { display: none; }
+
+    /* Cal config */
+    .cal-config { gap: 8px; }
+
+    /* Chart */
+    .load-chart { height: 80px; }
+
+    /* Logo */
+    .masthead-logo { width: 36px; height: 28px; }
   }
 
   /* WEEKS + SIDE PANEL LAYOUT */
@@ -964,7 +1013,14 @@
   <div class="masthead-wm">3000</div>
   <div class="masthead-inner">
     <div class="masthead-eyebrow">🏅 Outil de préparation sportive</div>
-    <h1 class="masthead-title"><span class="t-name">Prépa</span><span class="t-num">3000</span></h1>
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:0.35rem">
+      <svg class="masthead-logo" viewBox="0 0 52 42" fill="none" xmlns="http://www.w3.org/2000/svg" width="52" height="42" aria-hidden="true">
+        <polygon points="3,40 20,6 37,40" fill="#3A9ED4" opacity="0.92"/>
+        <polygon points="19,40 34,18 52,40" fill="#F5C518" opacity="0.88"/>
+        <polygon points="16,10 20,6 24,10" fill="white" opacity="0.9"/>
+      </svg>
+      <h1 class="masthead-title"><span class="t-name">Prépa</span><span class="t-num">3000</span></h1>
+    </div>
     <div class="masthead-sub">Le programme ne souffre pas à ta place.</div>
     <div class="masthead-event-row">
       <div class="masthead-event-badge">Objectif en cours</div>
@@ -977,7 +1033,7 @@
 
 <div class="main">
 
-  <!-- LEGEND -->
+  <!-- LEGEND + PACE ZONES -->
   <div class="legend">
     <div class="litem"><div class="ldot" style="background:#1D5FA8"></div>Z1/Z2 Endurance</div>
     <div class="litem"><div class="ldot" style="background:#C07B18"></div>Z3 Tempo</div>
@@ -986,6 +1042,7 @@
     <div class="litem"><div class="ldot" style="background:#9A9590"></div>Récup / Repos</div>
     <div class="litem"><div class="ldot" style="background:#5B4BA8"></div>Événement clé</div>
   </div>
+  <div id="pace-zones-bar"></div>
 
   <!-- WEEKS -->
   <div class="section-head"><h2>Programme semaine par semaine</h2></div>
@@ -1080,6 +1137,8 @@
       </div>
 
       <div id="ev-fields-cap" style="display:none;flex-direction:column;gap:4px">
+        <label>VMA (km/h)</label>
+        <input id="ev-vma" type="number" min="8" max="28" step="0.5" placeholder="ex: 16">
         <label>Format</label>
         <select id="ev-cap-format" onchange="onCapFormatChange()">
           <option value="k5">5 km</option>
@@ -1374,6 +1433,17 @@ const PHASE_DEFS = [
   {from:0.95, to:1.01, name:'Race week 🏁', c:'#D4522A', b:'rgba(212,82,42,0.15)', factor:0.2},
 ];
 
+function kmhToPace(kmh) {
+  const sec = 3600 / kmh;
+  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+function getPaceLabel(zone, vma) {
+  const ranges = {Z1:[0.60,0.70],Z2:[0.70,0.80],Z3:[0.80,0.90],Z4:[0.90,1.00],Mixed:[0.75,0.85]};
+  const r = ranges[zone]; if (!r) return null;
+  return `${kmhToPace(vma*r[1])}–${kmhToPace(vma*r[0])}`;
+}
+
 function formatDur(min) {
   if (!min) return '0h';
   const h = Math.floor(min / 60);
@@ -1541,7 +1611,7 @@ function resetState() {
 }
 
 // ── RENDER ─────────────────────────────────────────────────────────────────
-function render() { renderMasthead(); renderCalendarConfig(); renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); renderSessionPanel(); renderPhaseTable(); renderSessionTypes(); renderNutrition(); }
+function render() { renderMasthead(); renderCalendarConfig(); renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); renderSessionPanel(); renderPhaseTable(); renderSessionTypes(); renderNutrition(); renderPaceZones(); }
 
 function getEventStats(ev) {
   const s = [];
@@ -1556,6 +1626,7 @@ function getEventStats(ev) {
     if (ev.format==='ultra' && ev.distance) s.push({val:ev.distance, label:'Distance'});
     if (ev.format==='ultra' && ev.denivele) s.push({val:ev.denivele, label:'Dénivelé +'});
     if (ev.temps) s.push({val:ev.temps, label:'Temps estimé'});
+    if (ev.vma)   s.push({val:`${ev.vma} km/h`, label:'VMA'});
   } else if (ev.sport === 'tri') {
     const fmt = {S:'Triathlon S',M:'Triathlon M','70.3':'Half 70.3',ironman:'Ironman'};
     if (ev.format) s.push({val:fmt[ev.format]||ev.format, label:'Format'});
@@ -1617,8 +1688,12 @@ function renderWeeks() {
     const hPct = Math.round(pl.high/t*100);
     const dPct = pl.total>0 ? Math.round(dn.total/pl.total*100) : 0;
 
+    const _vma = parseFloat(state.config.event?.vma);
+    const _isCap = state.config.event?.sport === 'cap';
     const daysHtml = w.days.map((d, di) => {
       const tl = (d.t!=='Repos'&&d.t!=='Voyage') ? `<span class="day-type">${d.t}</span>` : '';
+      const pace = (_isCap && _vma > 0 && d.z !== 'Repos') ? getPaceLabel(d.z, _vma) : null;
+      const paceHtml = pace ? `<span class="day-pace">${pace}</span>` : '';
       return `<div class="day-col" draggable="true"
           ondragstart="onDragStart(event,${wi},${di})" ondragend="onDragEnd(event)"
           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)"
@@ -1627,7 +1702,7 @@ function renderWeeks() {
         <div class="day-pill ${d.done?'done':''}" style="color:${d.c};background:${d.b}"
              title="${d.desc?d.desc:''}"
              onclick="openModal(${wi},${di})">
-          <span class="day-pill-name">${d.l}</span>${tl}
+          <span class="day-pill-name">${d.l}</span>${tl}${paceHtml}
         </div>
         <button class="done-btn ${d.done?'checked':''}"
                 onclick="toggleDone(event,${wi},${di})">✓</button>
@@ -1727,6 +1802,29 @@ function renderAdaptations() {
       <div class="adapt-bar-wrap"><div class="adapt-bar-fill" style="width:${pct(dn.high,pl.high)}%;background:#D4522A"></div></div>
       <div class="adapt-vals"><span>${dn.high} / ${pl.high} pts</span><span class="adapt-pct">${pct(dn.high,pl.high)}%</span></div>
     </div>`:''}
+  </div>`;
+}
+
+// ── PACE ZONES ────────────────────────────────────────────────────────────
+function renderPaceZones() {
+  const el = document.getElementById('pace-zones-bar');
+  if (!el) return;
+  const ev = state.config.event || {};
+  const vma = parseFloat(ev.vma);
+  if (ev.sport !== 'cap' || !vma || vma <= 0) { el.innerHTML = ''; return; }
+  const zones = [
+    {name:'Z1', lo:0.60, hi:0.70, c:'#7A7670'},
+    {name:'Z2', lo:0.70, hi:0.80, c:'#1D5FA8'},
+    {name:'Z3', lo:0.80, hi:0.90, c:'#C07B18'},
+    {name:'Z4', lo:0.90, hi:1.00, c:'#D4522A'},
+    {name:'Mixte', lo:0.75, hi:0.85, c:'#2D7A4F'},
+  ];
+  el.innerHTML = `<div class="legend" style="margin-bottom:1.5rem">
+    ${zones.map(z => `<div class="litem" style="color:${z.c}">
+      <div class="ldot" style="background:${z.c}"></div>
+      <strong>${z.name}</strong>&nbsp;${kmhToPace(vma*z.hi)}–${kmhToPace(vma*z.lo)}<span style="color:var(--ink3)">/km</span>
+    </div>`).join('')}
+    <div class="litem" style="color:var(--ink3)">VMA ${vma} km/h</div>
   </div>`;
 }
 
@@ -1908,6 +2006,7 @@ function openEventModal() {
     document.getElementById('ev-velo-keys').value  = ev.pointsCles || '';
     document.getElementById('ev-velo-temps').value = ev.temps      || '';
   } else if (ev.sport === 'cap') {
+    document.getElementById('ev-vma').value        = ev.vma     || '';
     document.getElementById('ev-cap-format').value = ev.format  || 'marathon';
     document.getElementById('ev-cap-dist').value   = ev.distance|| '';
     document.getElementById('ev-cap-dplus').value  = ev.denivele|| '';
@@ -1943,6 +2042,7 @@ function readEventForm() {
     ev.pointsCles = document.getElementById('ev-velo-keys').value.trim();
     ev.temps      = document.getElementById('ev-velo-temps').value.trim();
   } else if (_currentSport === 'cap') {
+    ev.vma      = parseFloat(document.getElementById('ev-vma').value) || null;
     ev.format   = document.getElementById('ev-cap-format').value;
     ev.distance = document.getElementById('ev-cap-dist').value.trim();
     ev.denivele = document.getElementById('ev-cap-dplus').value.trim();
