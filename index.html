@@ -541,6 +541,8 @@
   .btn:hover { background: var(--bg3); }
   .btn-primary { background:var(--ink); color:var(--bg); border-color:var(--ink); }
   .btn-primary:hover { background: #2a2927; }
+  .btn-warn { background:rgba(212,82,42,0.08); color:var(--accent); border-color:rgba(212,82,42,0.35); }
+  .btn-warn:hover { background:rgba(212,82,42,0.16); }
 
   /* ADAPTATIONS */
   .adapt-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(170px,1fr)); gap:10px; margin-top:0.5rem; }
@@ -1140,9 +1142,12 @@
         </div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeEventModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveEventConfig()">Enregistrer</button>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-warn" onclick="confirmGeneratePlan()">🔄 Générer le plan</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeEventModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="saveEventConfig()">Enregistrer</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1167,10 +1172,31 @@
       <input id="m-name" type="text" placeholder="ex: Col Z3">
       <label>Type</label>
       <select id="m-type" onchange="onZoneChange()">
-        <option>Endurance</option><option>Col</option><option>HT Endurance</option>
-        <option>HT Tempo</option><option>HT Col</option><option>Test</option>
-        <option>Récupération</option><option>Repos</option><option>Activation</option>
-        <option>Voyage</option><option>Événement</option>
+        <option>Repos</option>
+        <option>Récupération</option>
+        <option>Activation</option>
+        <optgroup label="🚴 Vélo">
+          <option>Endurance</option>
+          <option>Col</option>
+          <option>HT Endurance</option>
+          <option>HT Tempo</option>
+          <option>HT Col</option>
+        </optgroup>
+        <optgroup label="🏃 Course à pied">
+          <option>Footing</option>
+          <option>Sortie longue</option>
+          <option>Fractionné</option>
+          <option>Tempo</option>
+          <option>Côtes</option>
+        </optgroup>
+        <optgroup label="🏊 Natation / Tri">
+          <option>Nage endurance</option>
+          <option>Nage technique</option>
+          <option>Brique</option>
+        </optgroup>
+        <option>Test</option>
+        <option>Voyage</option>
+        <option>Événement</option>
       </select>
       <label>Zone d'intensité</label>
       <select id="m-zone" onchange="onZoneChange()">
@@ -1240,6 +1266,44 @@ function snapToSunday(iso) {
   d.setDate(d.getDate() + (day === 0 ? 0 : 7 - day));
   return d.toISOString().split('T')[0];
 }
+
+const SPORT_TEMPLATES = {
+  velo: [
+    {n:'Lu', l:'Repos',          t:'Repos',        dur:0,   z:'Repos'},
+    {n:'Ma', l:'HT Col Z3',      t:'HT Col',       dur:75,  z:'Z3'},
+    {n:'Me', l:'HT Endurance',   t:'HT Endurance', dur:90,  z:'Z2'},
+    {n:'Je', l:'HT Tempo',       t:'HT Tempo',     dur:75,  z:'Z3'},
+    {n:'Ve', l:'Récup Z1',       t:'Récupération', dur:45,  z:'Z1'},
+    {n:'Sa', l:'Sortie longue',  t:'Test',         dur:240, z:'Mixed'},
+    {n:'Di', l:'Z2 fond',        t:'Endurance',    dur:120, z:'Z2'},
+  ],
+  cap: [
+    {n:'Lu', l:'Repos',          t:'Repos',        dur:0,   z:'Repos'},
+    {n:'Ma', l:'Fractionné',     t:'Fractionné',   dur:60,  z:'Z4'},
+    {n:'Me', l:'Footing Z2',     t:'Footing',      dur:60,  z:'Z2'},
+    {n:'Je', l:'Tempo Z3',       t:'Tempo',        dur:75,  z:'Z3'},
+    {n:'Ve', l:'Repos',          t:'Repos',        dur:0,   z:'Repos'},
+    {n:'Sa', l:'Sortie longue',  t:'Sortie longue',dur:120, z:'Mixed'},
+    {n:'Di', l:'Récup Z1',       t:'Récupération', dur:45,  z:'Z1'},
+  ],
+  tri: [
+    {n:'Lu', l:'Nage technique', t:'Nage technique',dur:45, z:'Z2'},
+    {n:'Ma', l:'Vélo seuil',     t:'Col',           dur:75, z:'Z3'},
+    {n:'Me', l:'Footing Z2',     t:'Footing',       dur:60, z:'Z2'},
+    {n:'Je', l:'Brique V+CAP',   t:'Brique',        dur:90, z:'Mixed'},
+    {n:'Ve', l:'Repos',          t:'Repos',         dur:0,  z:'Repos'},
+    {n:'Sa', l:'Vélo long',      t:'Endurance',     dur:180,z:'Mixed'},
+    {n:'Di', l:'CAP longue',     t:'Sortie longue', dur:90, z:'Z2'},
+  ],
+};
+
+const PHASE_DEFS = [
+  {from:0,    to:0.25, name:'Base',         c:'#1D5FA8', b:'rgba(29,95,168,0.1)',  factor:0.75},
+  {from:0.25, to:0.55, name:'Construction', c:'#2D7A4F', b:'rgba(45,122,79,0.1)',  factor:1.0},
+  {from:0.55, to:0.8,  name:'Spécifique',   c:'#C07B18', b:'rgba(192,123,24,0.1)', factor:1.1},
+  {from:0.8,  to:0.95, name:'Affûtage',     c:'#D4522A', b:'rgba(212,82,42,0.1)',  factor:0.6},
+  {from:0.95, to:1.01, name:'Race week 🏁', c:'#D4522A', b:'rgba(212,82,42,0.15)', factor:0.2},
+];
 
 function formatDur(min) {
   if (!min) return '0h';
@@ -1730,7 +1794,7 @@ function onCapFormatChange() {
   const isUltra = document.getElementById('ev-cap-format').value === 'ultra';
   document.getElementById('ev-cap-ultra').style.display = isUltra ? 'flex' : 'none';
 }
-function saveEventConfig() {
+function readEventForm() {
   const ev = { name: document.getElementById('ev-name').value.trim(), sport: _currentSport };
   if (_currentSport === 'velo') {
     ev.distance   = document.getElementById('ev-velo-dist').value.trim();
@@ -1747,12 +1811,65 @@ function saveEventConfig() {
     ev.composition = document.getElementById('ev-tri-comp').value.trim();
     ev.temps       = document.getElementById('ev-tri-temps').value.trim();
   }
-  state.config.event = ev;
-  state.config.constraints = {
+  const constraints = {
     days: [0,1,2,3,4,5,6].map(i => document.getElementById(`ev-day-${i}`).checked),
     weeklyVolume: parseFloat(document.getElementById('ev-volume').value) || 12
   };
+  return { ev, constraints };
+}
+function saveEventConfig() {
+  const { ev, constraints } = readEventForm();
+  state.config.event = ev;
+  state.config.constraints = constraints;
   saveState(); closeEventModal(); render();
+}
+function confirmGeneratePlan() {
+  if (!confirm('Générer un nouveau plan remplacera toutes tes semaines actuelles.\n\nCette action est irréversible. Continuer ?')) return;
+  const { ev, constraints } = readEventForm();
+  state.config.event = ev;
+  state.config.constraints = constraints;
+  state.weeks = generateTemplatePlan(ev.sport, constraints, state.config.startDate, state.config.endDate);
+  saveState(); closeEventModal(); render();
+}
+
+// ── PLAN GENERATION ────────────────────────────────────────────────────────
+function getPhaseForWeek(idx, total) {
+  const pct = total <= 1 ? 1 : idx / (total - 1);
+  return PHASE_DEFS.find(p => pct >= p.from && pct < p.to) || PHASE_DEFS[PHASE_DEFS.length - 1];
+}
+function generateTemplatePlan(sport, constraints, startISO, endISO) {
+  const { days: availDays, weeklyVolume } = constraints;
+  const targetMin = Math.round(weeklyVolume * 60);
+  const tpl = SPORT_TEMPLATES[sport] || SPORT_TEMPLATES.velo;
+  const cur = new Date(startISO + 'T12:00:00');
+  const end = new Date(endISO   + 'T12:00:00');
+  const totalWeeks = Math.round((end - cur) / (7 * 24 * 3600 * 1000)) + 1;
+  const weeks = [];
+  let i = 0;
+  while (cur <= end) {
+    const sun = new Date(cur); sun.setDate(sun.getDate() + 6);
+    const monISO = cur.toISOString().split('T')[0];
+    const sunISO = sun.toISOString().split('T')[0];
+    weeks.push(buildTemplateWeek(tpl, i, totalWeeks, availDays, targetMin, monISO, sunISO));
+    i++; cur.setDate(cur.getDate() + 7);
+  }
+  return weeks;
+}
+function buildTemplateWeek(tpl, weekIdx, totalWeeks, availDays, targetMin, monISO, sunISO) {
+  const phase = getPhaseForWeek(weekIdx, totalWeeks);
+  const adjusted = Math.round(targetMin * phase.factor);
+  const activeSum = tpl.reduce((a, d) => a + (d.z !== 'Repos' && d.dur > 0 ? d.dur : 0), 0);
+  const scale = activeSum > 0 ? adjusted / activeSum : 1;
+  const days = tpl.map((t, i) => {
+    const isRest = t.z === 'Repos' || !availDays[i];
+    const dur = isRest ? 0 : Math.min(720, Math.round(t.dur * scale / 15) * 15);
+    const col = sessionColor(isRest ? 'Repos' : t.t, isRest ? 'Repos' : t.z);
+    return { n:t.n, l:isRest?'Repos':t.l, t:isRest?'Repos':t.t, dur, z:isRest?'Repos':t.z, c:col.c, b:col.b, done:false, desc:'' };
+  });
+  return {
+    num: weekIdx+1, label:`S${weekIdx+1}`, dates:formatWeekDates(monISO, sunISO),
+    phase:phase.name, pc:phase.c, pb:phase.b, note:'', days
+  };
 }
 
 // ── PHASE DROPDOWN ────────────────────────────────────────────────────────
