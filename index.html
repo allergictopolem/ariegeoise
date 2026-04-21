@@ -6,6 +6,11 @@
 <title>Prépa3000 — Plan de préparation sportive</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@800&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%23141210'/><polygon points='4,28 15,7 26,28' fill='%233A9ED4'/><polygon points='13,28 23,14 32,28' fill='%23F5C518' opacity='.9'/><polygon points='12,11 15,7 18,11' fill='white' opacity='.9'/></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='38' fill='%23141210'/><polygon points='22,156 85,40 148,156' fill='%233A9ED4'/><polygon points='74,156 130,78 180,156' fill='%23F5C518' opacity='.9'/><polygon points='67,63 85,40 103,63' fill='white' opacity='.9'/></svg>">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Prépa3000">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#141210">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -284,6 +289,14 @@
     color: var(--ink3);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    display: flex;
+    align-items: baseline;
+    gap: 3px;
+  }
+  .day-num {
+    font-size: 8px;
+    color: var(--ink3);
+    opacity: 0.6;
   }
   .day-pill {
     width: 100%;
@@ -1270,12 +1283,9 @@
         <button class="btn btn-warn" onclick="doGeneratePlan()" style="font-size:11px;padding:5px 10px">Oui, générer</button>
       </div>
     </div>
-    <div class="modal-footer" style="justify-content:space-between">
-      <button class="btn btn-warn" onclick="showGenConfirm()">🔄 Générer le plan</button>
-      <div style="display:flex;gap:8px">
-        <button class="btn" onclick="closeEventModal()">Annuler</button>
-        <button class="btn btn-primary" onclick="saveEventConfig()">Enregistrer</button>
-      </div>
+    <div class="modal-footer" style="flex-direction:column;align-items:stretch;gap:8px">
+      <button class="btn btn-primary" style="font-size:14px;padding:11px 0;letter-spacing:0.01em" onclick="showGenConfirm()">Générer le plan</button>
+      <button class="btn" style="align-self:center;font-size:11px;color:var(--ink3)" onclick="closeEventModal()">Annuler</button>
     </div>
   </div>
 </div>
@@ -1816,7 +1826,14 @@ function renderWeeks() {
 
     const _racePace = parseInt(state.config.event?.racePace);
     const _isCap = state.config.event?.sport === 'cap';
+    const _weekStart = state.config.startDate ? new Date(state.config.startDate + 'T12:00:00') : null;
+    if (_weekStart) _weekStart.setDate(_weekStart.getDate() + wi * 7);
     const daysHtml = w.days.map((d, di) => {
+      let dayNum = '';
+      if (_weekStart) {
+        const dd = new Date(_weekStart); dd.setDate(dd.getDate() + di);
+        dayNum = dd.getDate();
+      }
       const tl = (d.t!=='Repos'&&d.t!=='Voyage') ? `<span class="day-type">${d.t}</span>` : '';
       const pace = (_isCap && _racePace > 0 && d.z !== 'Repos') ? getPaceLabel(d.z, _racePace) : null;
       const paceHtml = pace ? `<span class="day-pace">${pace}</span>` : '';
@@ -1845,7 +1862,7 @@ function renderWeeks() {
           ondragstart="onDragStart(event,${wi},${di})" ondragend="onDragEnd(event)"
           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)"
           ondrop="onDrop(event,${wi},${di})">
-        <div class="day-name">${d.n}</div>
+        <div class="day-name">${d.n}${dayNum ? `<span class="day-num">${dayNum}</span>` : ''}</div>
         <div class="day-pill ${d.done?'done':''}${diffClass}" style="color:${d.c};background:${d.b}"
              title="${pillTitle}"
              onclick="openModal(${wi},${di})">
