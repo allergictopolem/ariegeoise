@@ -877,6 +877,16 @@
     .week:hover { box-shadow: none; }
   }
 
+  /* NUTRITION HINT */
+  .day-nutri {
+    display: block;
+    font-size: 7px;
+    opacity: 0.72;
+    margin-top: 2px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.01em;
+  }
+
   /* RUNNING PACE */
   .day-pace {
     display: block;
@@ -1935,6 +1945,8 @@ function renderWeeks() {
       const tl = (d.t!=='Repos'&&d.t!=='Voyage') ? `<span class="day-type">${d.t}</span>` : '';
       const pace = (_isCap && _racePace > 0 && d.z !== 'Repos') ? getPaceLabel(d.z, _racePace) : null;
       const paceHtml = pace ? `<span class="day-pace">${pace}</span>` : '';
+      const nutri = getNutriHint(d.z, d.dur);
+      const nutriHtml = nutri ? `<span class="day-nutri">${nutri}</span>` : '';
       // Strava
       const sv = d.strava;
       const diffClass = sv?.case === 'D' ? ' strava-diff' : '';
@@ -1964,7 +1976,7 @@ function renderWeeks() {
         <div class="day-pill ${d.done?'done':''}${diffClass}" style="color:${d.c};background:${d.b}"
              title="${pillTitle}"
              onclick="openModal(${wi},${di})">
-          <span class="day-pill-name">${d.l}</span>${tl}${paceHtml}${gaugeHtml}
+          <span class="day-pill-name">${d.l}</span>${tl}${paceHtml}${nutriHtml}${gaugeHtml}
         </div>
         <button class="done-btn ${d.done?'checked':''}"
                 onclick="toggleDone(event,${wi},${di})">✓</button>
@@ -2186,6 +2198,16 @@ function renderSessionTypes() {
       }).join('')}
     </tbody>
   </table></div>`;
+}
+
+// ── NUTRITION HINT PER SESSION ─────────────────────────────────────────────
+function getNutriHint(zone, durMin) {
+  if (!zone || zone === 'Repos' || !durMin) return null;
+  if (zone === 'Z1' && durMin < 90) return null;
+  const n = state.config.nutrition || DEFAULT_NUTRITION;
+  if (zone === 'Z1') return '💧 eau seule';
+  if (zone === 'Z2') return `🍌 ${n.carbsCurrent} · électrolytes si chaud`;
+  return `🍌 ${n.carbsTarget} · électrolytes`;
 }
 
 // ── NUTRITION ──────────────────────────────────────────────────────────────
