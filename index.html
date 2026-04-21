@@ -2179,6 +2179,7 @@ function selectSport(sport) {
   ['velo','cap','tri'].forEach(s => {
     document.getElementById(`ev-fields-${s}`).style.display = s===sport ? 'flex' : 'none';
   });
+  if (sport === 'cap') { populatePaceSelect(); onRacePaceChange(); }
 }
 function populatePaceSelect() {
   const sel = document.getElementById('ev-racepace');
