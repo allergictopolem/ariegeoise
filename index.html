@@ -1210,8 +1210,9 @@
       </div>
 
       <div id="ev-fields-cap" style="display:none;flex-direction:column;gap:4px">
-        <label>VMA (km/h)</label>
-        <input id="ev-vma" type="number" min="8" max="28" step="0.5" placeholder="ex: 16">
+        <label>Allure cible (min/km)</label>
+        <select id="ev-racepace" onchange="onRacePaceChange()"></select>
+        <div id="ev-cap-esttime" style="font-family:var(--font-mono);font-size:10px;color:var(--ink3);margin-top:-2px;min-height:14px"></div>
         <label>Format</label>
         <select id="ev-cap-format" onchange="onCapFormatChange()">
           <option value="k5">5 km</option>
@@ -1226,8 +1227,6 @@
           <label>Dénivelé +</label>
           <input id="ev-cap-dplus" type="text" placeholder="6 000 m">
         </div>
-        <label>Temps estimé</label>
-        <input id="ev-cap-temps" type="text" placeholder="3h30">
       </div>
 
       <div id="ev-fields-tri" style="display:none;flex-direction:column;gap:4px">
@@ -1524,15 +1523,45 @@ const PHASE_DEFS = [
   {from:0.95, to:1.01, name:'Race week 🏁', c:'#D4522A', b:'rgba(212,82,42,0.15)', factor:0.2},
 ];
 
-function kmhToPace(kmh) {
-  const sec = 3600 / kmh;
-  const m = Math.floor(sec / 60), s = Math.round(sec % 60);
+// Pace zones — fixed physiological ratios, uniform across all formats
+// Race pace = Z3 anchor. Z1-Z4 derived as % of race velocity.
+const PACE_RATIOS = {
+  Z1:    [0.65, 0.73],
+  Z2:    [0.73, 0.83],
+  Z3:    [0.83, 0.93],
+  Z4:    [0.93, 1.03],
+  Mixed: [0.78, 0.88],
+};
+const FORMAT_DIST_KM = {k5:5, k10:10, semi:21.0975, marathon:42.195};
+
+function secToStr(totalSec) {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  const s = Math.round(totalSec % 60);
+  if (h > 0) return `${h}h${String(m).padStart(2,'0')}${s > 0 ? ':' + String(s).padStart(2,'0') : ''}`;
   return `${m}:${String(s).padStart(2,'0')}`;
 }
-function getPaceLabel(zone, vma) {
-  const ranges = {Z1:[0.60,0.70],Z2:[0.70,0.80],Z3:[0.80,0.90],Z4:[0.90,1.00],Mixed:[0.75,0.85]};
-  const r = ranges[zone]; if (!r) return null;
-  return `${kmhToPace(vma*r[1])}–${kmhToPace(vma*r[0])}`;
+
+function paceZoneLabel(zone, racePaceSec) {
+  const r = PACE_RATIOS[zone]; if (!r || !racePaceSec) return null;
+  // pace (sec/km) = racePace / ratio  (higher ratio = higher velocity = faster pace = lower sec/km)
+  return `${secToStr(racePaceSec / r[1])}–${secToStr(racePaceSec / r[0])}`;
+}
+
+function computeFinishTime(racePaceSec, format, ultraDistKm) {
+  const dist = FORMAT_DIST_KM[format] || ultraDistKm;
+  if (!dist || !racePaceSec) return null;
+  return secToStr(dist * racePaceSec);
+}
+
+function parseUltraDist(str) {
+  if (!str) return null;
+  const m = str.match(/(\d+(?:[.,]\d+)?)/);
+  return m ? parseFloat(m[1].replace(',', '.')) : null;
+}
+
+function getPaceLabel(zone, racePaceSec) {
+  return paceZoneLabel(zone, racePaceSec);
 }
 
 function formatDur(min) {
@@ -1718,8 +1747,11 @@ function getEventStats(ev) {
     if (ev.format) s.push({val:fmt[ev.format]||ev.format, label:'Format'});
     if (ev.format==='ultra' && ev.distance) s.push({val:ev.distance, label:'Distance'});
     if (ev.format==='ultra' && ev.denivele) s.push({val:ev.denivele, label:'Dénivelé +'});
-    if (ev.temps) s.push({val:ev.temps, label:'Temps estimé'});
-    if (ev.vma)   s.push({val:`${ev.vma} km/h`, label:'VMA'});
+    if (ev.racePace) {
+      s.push({val:`${secToStr(ev.racePace)}/km`, label:'Allure cible'});
+      const fin = computeFinishTime(ev.racePace, ev.format, parseUltraDist(ev.distance));
+      if (fin) s.push({val:fin, label:'Temps estimé'});
+    }
   } else if (ev.sport === 'tri') {
     const fmt = {S:'Triathlon S',M:'Triathlon M','70.3':'Half 70.3',ironman:'Ironman'};
     if (ev.format) s.push({val:fmt[ev.format]||ev.format, label:'Format'});
@@ -1781,11 +1813,11 @@ function renderWeeks() {
     const hPct = Math.round(pl.high/t*100);
     const dPct = pl.total>0 ? Math.round(dn.total/pl.total*100) : 0;
 
-    const _vma = parseFloat(state.config.event?.vma);
+    const _racePace = parseInt(state.config.event?.racePace);
     const _isCap = state.config.event?.sport === 'cap';
     const daysHtml = w.days.map((d, di) => {
       const tl = (d.t!=='Repos'&&d.t!=='Voyage') ? `<span class="day-type">${d.t}</span>` : '';
-      const pace = (_isCap && _vma > 0 && d.z !== 'Repos') ? getPaceLabel(d.z, _vma) : null;
+      const pace = (_isCap && _racePace > 0 && d.z !== 'Repos') ? getPaceLabel(d.z, _racePace) : null;
       const paceHtml = pace ? `<span class="day-pace">${pace}</span>` : '';
       // Strava
       const sv = d.strava;
@@ -1925,21 +1957,22 @@ function renderPaceZones() {
   const el = document.getElementById('pace-zones-bar');
   if (!el) return;
   const ev = state.config.event || {};
-  const vma = parseFloat(ev.vma);
-  if (ev.sport !== 'cap' || !vma || vma <= 0) { el.innerHTML = ''; return; }
+  const racePace = parseInt(ev.racePace);
+  if (ev.sport !== 'cap' || !racePace || racePace <= 0) { el.innerHTML = ''; return; }
   const zones = [
-    {name:'Z1', lo:0.60, hi:0.70, c:'#7A7670'},
-    {name:'Z2', lo:0.70, hi:0.80, c:'#1D5FA8'},
-    {name:'Z3', lo:0.80, hi:0.90, c:'#C07B18'},
-    {name:'Z4', lo:0.90, hi:1.00, c:'#D4522A'},
-    {name:'Mixte', lo:0.75, hi:0.85, c:'#2D7A4F'},
+    {name:'Z1', z:'Z1',    c:'#7A7670'},
+    {name:'Z2', z:'Z2',    c:'#1D5FA8'},
+    {name:'Z3', z:'Z3',    c:'#C07B18'},
+    {name:'Z4', z:'Z4',    c:'#D4522A'},
+    {name:'Mixte', z:'Mixed', c:'#2D7A4F'},
   ];
+  const finish = computeFinishTime(racePace, ev.format, parseUltraDist(ev.distance));
   el.innerHTML = `<div class="legend" style="margin-bottom:1.5rem">
     ${zones.map(z => `<div class="litem" style="color:${z.c}">
       <div class="ldot" style="background:${z.c}"></div>
-      <strong>${z.name}</strong>&nbsp;${kmhToPace(vma*z.hi)}–${kmhToPace(vma*z.lo)}<span style="color:var(--ink3)">/km</span>
+      <strong>${z.name}</strong>&nbsp;${paceZoneLabel(z.z, racePace)||'—'}<span style="color:var(--ink3)">/km</span>
     </div>`).join('')}
-    <div class="litem" style="color:var(--ink3)">VMA ${vma} km/h</div>
+    <div class="litem" style="color:var(--ink3)">Allure ${secToStr(racePace)}/km${finish ? ` · ${finish}` : ''}</div>
   </div>`;
 }
 
@@ -2122,11 +2155,11 @@ function openEventModal() {
     document.getElementById('ev-velo-keys').value  = ev.pointsCles || '';
     document.getElementById('ev-velo-temps').value = ev.temps      || '';
   } else if (ev.sport === 'cap') {
-    document.getElementById('ev-vma').value        = ev.vma     || '';
-    document.getElementById('ev-cap-format').value = ev.format  || 'marathon';
-    document.getElementById('ev-cap-dist').value   = ev.distance|| '';
-    document.getElementById('ev-cap-dplus').value  = ev.denivele|| '';
-    document.getElementById('ev-cap-temps').value  = ev.temps   || '';
+    populatePaceSelect();
+    document.getElementById('ev-racepace').value   = ev.racePace || 330;
+    document.getElementById('ev-cap-format').value = ev.format   || 'marathon';
+    document.getElementById('ev-cap-dist').value   = ev.distance || '';
+    document.getElementById('ev-cap-dplus').value  = ev.denivele || '';
     onCapFormatChange();
   } else if (ev.sport === 'tri') {
     document.getElementById('ev-tri-format').value = ev.format      || '70.3';
@@ -2146,9 +2179,31 @@ function selectSport(sport) {
     document.getElementById(`ev-fields-${s}`).style.display = s===sport ? 'flex' : 'none';
   });
 }
+function populatePaceSelect() {
+  const sel = document.getElementById('ev-racepace');
+  if (!sel || sel.options.length > 0) return;
+  for (let sec = 210; sec <= 540; sec += 15) {
+    const opt = document.createElement('option');
+    opt.value = sec;
+    opt.textContent = `${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')} /km`;
+    sel.appendChild(opt);
+  }
+}
+function onRacePaceChange() {
+  const sel = document.getElementById('ev-racepace');
+  const el  = document.getElementById('ev-cap-esttime');
+  if (!sel || !el) return;
+  const racePace = parseInt(sel.value);
+  const format   = document.getElementById('ev-cap-format').value;
+  const dist     = FORMAT_DIST_KM[format];
+  const ultra    = format === 'ultra' ? parseUltraDist(document.getElementById('ev-cap-dist').value) : null;
+  const fin      = computeFinishTime(racePace, format, ultra);
+  el.textContent = fin ? `→ ${fin} estimé` : '';
+}
 function onCapFormatChange() {
   const isUltra = document.getElementById('ev-cap-format').value === 'ultra';
   document.getElementById('ev-cap-ultra').style.display = isUltra ? 'flex' : 'none';
+  onRacePaceChange();
 }
 function readEventForm() {
   const ev = { name: document.getElementById('ev-name').value.trim(), sport: _currentSport };
@@ -2158,11 +2213,10 @@ function readEventForm() {
     ev.pointsCles = document.getElementById('ev-velo-keys').value.trim();
     ev.temps      = document.getElementById('ev-velo-temps').value.trim();
   } else if (_currentSport === 'cap') {
-    ev.vma      = parseFloat(document.getElementById('ev-vma').value) || null;
+    ev.racePace = parseInt(document.getElementById('ev-racepace').value) || null;
     ev.format   = document.getElementById('ev-cap-format').value;
     ev.distance = document.getElementById('ev-cap-dist').value.trim();
     ev.denivele = document.getElementById('ev-cap-dplus').value.trim();
-    ev.temps    = document.getElementById('ev-cap-temps').value.trim();
   } else if (_currentSport === 'tri') {
     ev.format      = document.getElementById('ev-tri-format').value;
     ev.composition = document.getElementById('ev-tri-comp').value.trim();
