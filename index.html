@@ -1331,20 +1331,21 @@
         <div>
           <label>Jours disponibles</label>
           <div class="days-picker">
-            <label class="day-check"><input type="checkbox" id="ev-day-0" checked>Lu</label>
-            <label class="day-check"><input type="checkbox" id="ev-day-1" checked>Ma</label>
-            <label class="day-check"><input type="checkbox" id="ev-day-2" checked>Me</label>
-            <label class="day-check"><input type="checkbox" id="ev-day-3" checked>Je</label>
-            <label class="day-check"><input type="checkbox" id="ev-day-4" checked>Ve</label>
-            <label class="day-check"><input type="checkbox" id="ev-day-5" checked>Sa</label>
-            <label class="day-check"><input type="checkbox" id="ev-day-6" checked>Di</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-0" checked onchange="validateEventForm()">Lu</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-1" checked onchange="validateEventForm()">Ma</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-2" checked onchange="validateEventForm()">Me</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-3" checked onchange="validateEventForm()">Je</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-4" checked onchange="validateEventForm()">Ve</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-5" checked onchange="validateEventForm()">Sa</label>
+            <label class="day-check"><input type="checkbox" id="ev-day-6" checked onchange="validateEventForm()">Di</label>
           </div>
         </div>
         <div>
           <label>Volume cible / semaine (h)</label>
-          <input id="ev-volume" type="number" min="1" max="40" step="0.5" placeholder="12">
+          <input id="ev-volume" type="number" min="1" max="40" step="0.5" placeholder="12" oninput="validateEventForm()">
         </div>
       </div>
+      <div id="gen-validation-msg" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(212,82,42,0.07);border-left:2px solid var(--accent);border-radius:3px;font-family:var(--font-mono);font-size:10px;color:var(--accent);line-height:1.6"></div>
     </div>
     <div id="gen-confirm-bar" style="display:none;padding:10px 18px;background:rgba(212,82,42,0.07);border-top:1px solid rgba(212,82,42,0.2);font-size:12px;color:var(--accent);display:none;align-items:center;justify-content:space-between;gap:10px">
       <span>⚠ Remplacera tout le plan — confirmer ?</span>
@@ -2308,6 +2309,7 @@ function openEventModal() {
   days.forEach((v,i) => { document.getElementById(`ev-day-${i}`).checked = v; });
   document.getElementById('ev-volume').value = co.weeklyVolume || 12;
   document.getElementById('event-modal').style.display = 'flex';
+  setTimeout(validateEventForm, 0);
 }
 function closeEventModal() { document.getElementById('event-modal').style.display = 'none'; hideGenConfirm(); }
 function selectSport(sport) {
@@ -2317,6 +2319,7 @@ function selectSport(sport) {
     document.getElementById(`ev-fields-${s}`).style.display = s===sport ? 'flex' : 'none';
   });
   if (sport === 'cap') { populatePaceSelect(); onRacePaceChange(); }
+  validateEventForm();
 }
 function populatePaceSelect() {
   const sel = document.getElementById('ev-racepace');
@@ -2343,6 +2346,37 @@ function onCapFormatChange() {
   const isUltra = document.getElementById('ev-cap-format').value === 'ultra';
   document.getElementById('ev-cap-ultra').style.display = isUltra ? 'flex' : 'none';
   onRacePaceChange();
+  validateEventForm();
+}
+
+function validateEventForm() {
+  const nbDays = [0,1,2,3,4,5,6].filter(i => document.getElementById(`ev-day-${i}`)?.checked).length;
+  const volume = parseFloat(document.getElementById('ev-volume')?.value) || 0;
+  const errors = [];
+
+  if (_currentSport === 'cap') {
+    const fmt = document.getElementById('ev-cap-format')?.value;
+    if (fmt === 'marathon') {
+      if (nbDays < 4) errors.push('Marathon : minimum 4 jours d\'entraînement par semaine.');
+      if (volume > 0 && volume < 4) errors.push('Marathon : volume minimum de 4 h / semaine.');
+    } else if (fmt === 'semi') {
+      if (nbDays < 3) errors.push('Semi-marathon : minimum 3 jours d\'entraînement par semaine.');
+      if (volume > 0 && volume < 3) errors.push('Semi-marathon : volume minimum de 3 h / semaine.');
+    }
+  }
+
+  if (nbDays > 0 && volume > 0 && volume / nbDays > 3) {
+    errors.push(`Ratio volume/jours trop élevé (${(volume/nbDays).toFixed(1)} h/jour) — réduis le volume ou coche plus de jours.`);
+  }
+
+  const msg = document.getElementById('gen-validation-msg');
+  if (msg) {
+    msg.style.display = errors.length ? 'block' : 'none';
+    msg.innerHTML = errors.map(e => `⚠ ${e}`).join('<br>');
+  }
+  const btn = document.querySelector('#event-modal .btn-primary');
+  if (btn) btn.disabled = errors.length > 0;
+  return errors.length === 0;
 }
 function readEventForm() {
   const ev = { name: document.getElementById('ev-name').value.trim(), sport: _currentSport };
@@ -2374,6 +2408,7 @@ function saveEventConfig() {
   saveState(); closeEventModal(); render();
 }
 function showGenConfirm() {
+  if (!validateEventForm()) return;
   const bar = document.getElementById('gen-confirm-bar');
   if (bar) bar.style.display = 'flex';
 }
@@ -2491,8 +2526,9 @@ function buildSmartWeek(sport, ev, weekIdx, totalWeeks, availDays, targetMin, mo
   }
   const efIdx  = availIndices.filter(d => !used.includes(d));
   const pName  = isDecharge ? 'Décharge' : phase.name;
-  const hiDur  = getHIDur(pName, adjusted);
-  const longDur = getLongDur(pName, weekIdx, raceTimeMin, targetMin);
+  const maxSessionDur = Math.round(adjusted * 0.45 / 15) * 15;
+  const hiDur  = Math.min(getHIDur(pName, adjusted), maxSessionDur);
+  const longDur = Math.min(getLongDur(pName, weekIdx, raceTimeMin, targetMin), maxSessionDur);
   const keyTot = hiDur * (hi2Day!==null?2:1) + longDur;
   const efDur  = efIdx.length > 0 ? Math.max(30, Math.round(Math.max(0,adjusted-keyTot)/efIdx.length/15)*15) : 0;
 
