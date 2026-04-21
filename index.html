@@ -1394,6 +1394,7 @@ const PHASES = [
   {name:'Race week 🏁',c:'#D4522A', b:'rgba(212,82,42,0.15)'},
   {name:'Base',        c:'#1D5FA8', b:'rgba(29,95,168,0.1)'},
   {name:'Récupération',c:'#7A7670', b:'rgba(122,118,112,0.1)'},
+  {name:'Décharge',    c:'#7A9FAF', b:'rgba(122,159,175,0.12)'},
 ];
 const PHASE_PALETTE = [
   {c:'#5B4BA8', b:'rgba(91,75,168,0.1)'},
@@ -2262,51 +2263,132 @@ function getPhaseForWeek(idx, total) {
   const pct = total <= 1 ? 1 : idx / (total - 1);
   return PHASE_DEFS.find(p => pct >= p.from && pct < p.to) || PHASE_DEFS[PHASE_DEFS.length - 1];
 }
+// ── SMART PLAN GENERATION ──────────────────────────────────────────────────
+const DECHARGE_PHASE = {name:'Décharge', c:'#7A9FAF', b:'rgba(122,159,175,0.12)'};
+
+function findClosestAvail(preferred, availIndices, exclude) {
+  const cands = availIndices.filter(i => !exclude.includes(i));
+  if (!cands.length) return null;
+  return cands.reduce((best, i) => Math.abs(i-preferred) < Math.abs(best-preferred) ? i : best);
+}
+
+function getSessionKit(sport, ev, phaseName) {
+  const format = ev.format || 'marathon';
+  const isShortCap = ['k5','k10'].includes(format);
+  const isSpec  = phaseName === 'Spécifique';
+  const isTaper = phaseName === 'Affûtage' || phaseName === 'Race week 🏁';
+  if (sport === 'cap') {
+    const hiSess = (isSpec && !isShortCap)
+      ? {l:'Tempo allure cible', t:'Tempo',      z:'Z3'}
+      : isTaper
+      ? {l:'Fractionné court',  t:'Fractionné', z:'Z4'}
+      : {l:'Fractionné Z4',     t:'Fractionné', z:'Z4'};
+    return {
+      hi:   hiSess,
+      hi2:  isShortCap ? {l:'Côtes Z4', t:'Côtes', z:'Z4'} : null,
+      long: {l:'Sortie longue', t:'Sortie longue', z:'Mixed'},
+      ef:   {l:'Footing EF',    t:'Footing',       z:'Z2'},
+    };
+  }
+  if (sport === 'velo') {
+    return {
+      hi:   isSpec ? {l:'HT Seuil Z4', t:'HT Col', z:'Z4'} : {l:'HT Intensité', t:'HT Tempo', z:'Z3'},
+      long: {l:'Sortie longue', t:'Test',      z:'Mixed'},
+      ef:   {l:'Endurance Z2',  t:'Endurance', z:'Z2'},
+    };
+  }
+  // tri
+  return {
+    hi:   isSpec ? {l:'Brique HI seuil', t:'Brique', z:'Z3'} : {l:'Brique HI', t:'Brique', z:'Mixed'},
+    long: {l:'Vélo long',            t:'Endurance', z:'Mixed'},
+    ef:   {l:'Endurance pluridisc.', t:'Footing',   z:'Z2'},
+  };
+}
+
+function getHIDur(phaseName, adjusted) {
+  const pcts = {Base:0.18, Construction:0.20, Spécifique:0.22, Affûtage:0.15, 'Race week 🏁':0.10, Décharge:0.17};
+  return Math.max(30, Math.min(120, Math.round(adjusted * (pcts[phaseName]||0.18) / 15) * 15));
+}
+
+function getLongDur(phaseName, weekIdx, raceTimeMin, targetMin) {
+  const pcts = {Base:0.35, Construction:0.52, Spécifique:0.68, Affûtage:0.42, 'Race week 🏁':0.18, Décharge:0.40};
+  const blockAdj = [0.95, 1.00, 1.07, 0.75][weekIdx % 4];
+  const pct = pcts[phaseName] || 0.50;
+  if (raceTimeMin) return Math.max(45, Math.min(240, Math.round(raceTimeMin * pct * blockAdj / 15) * 15));
+  return Math.max(60, Math.min(300, Math.round(targetMin * 0.32 * blockAdj / 15) * 15));
+}
+
+function buildSmartWeek(sport, ev, weekIdx, totalWeeks, availDays, targetMin, monISO, sunISO, raceTimeMin) {
+  const phase = getPhaseForWeek(weekIdx, totalWeeks);
+  const isDecharge = weekIdx % 4 === 3 && phase.name !== 'Race week 🏁';
+  const blockMult  = [0.90, 1.00, 1.10, 0.65][weekIdx % 4];
+  const adjusted   = Math.round(targetMin * phase.factor * blockMult);
+  const dp = isDecharge ? DECHARGE_PHASE : phase;
+  const dayNames = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
+  const availIndices = availDays.map((v,i) => v ? i : -1).filter(i => i >= 0);
+  const mkRest = n => { const col = sessionColor('Repos','Repos'); return {n,l:'Repos',t:'Repos',dur:0,z:'Repos',c:col.c,b:col.b,done:false,desc:''}; };
+
+  // Race week: two short activations only
+  if (phase.name === 'Race week 🏁') {
+    const a1 = findClosestAvail(1, availIndices, []);
+    const a2 = findClosestAvail(3, availIndices, a1!==null?[a1]:[]);
+    const days = dayNames.map((n,i) => {
+      if (i===a1||i===a2) { const col=sessionColor('Activation','Z1'); return {n,l:'Activation Z1',t:'Activation',dur:30,z:'Z1',c:col.c,b:col.b,done:false,desc:''}; }
+      return mkRest(n);
+    });
+    return {num:weekIdx+1,label:`S${weekIdx+1}`,dates:formatWeekDates(monISO,sunISO),phase:dp.name,pc:dp.c,pb:dp.b,note:'',days};
+  }
+
+  const kit = getSessionKit(sport, ev, phase.name);
+  const used = [];
+  const hiDay   = findClosestAvail(2, availIndices, used); if (hiDay!==null) used.push(hiDay);
+  const longDay = findClosestAvail(5, availIndices, used); if (longDay!==null) used.push(longDay);
+  let hi2Day = null;
+  if (kit.hi2 && availIndices.length >= 3) {
+    hi2Day = findClosestAvail(3, availIndices, used);
+    if (hi2Day!==null) used.push(hi2Day);
+  }
+  const efIdx  = availIndices.filter(d => !used.includes(d));
+  const pName  = isDecharge ? 'Décharge' : phase.name;
+  const hiDur  = getHIDur(pName, adjusted);
+  const longDur = getLongDur(pName, weekIdx, raceTimeMin, targetMin);
+  const keyTot = hiDur * (hi2Day!==null?2:1) + longDur;
+  const efDur  = efIdx.length > 0 ? Math.max(30, Math.round(Math.max(0,adjusted-keyTot)/efIdx.length/15)*15) : 0;
+
+  const days = dayNames.map((n,i) => {
+    if (!availDays[i]) return mkRest(n);
+    let s;
+    if (i===hiDay)          s = {...kit.hi,  dur:hiDur};
+    else if (i===hi2Day)    s = {...kit.hi2, dur:hiDur};
+    else if (i===longDay)   s = {...kit.long, dur:longDur};
+    else if (efIdx.includes(i)) s = {...kit.ef, dur:efDur};
+    else return mkRest(n);
+    const col = sessionColor(s.t, s.z);
+    return {n,l:s.l,t:s.t,dur:s.dur||0,z:s.z,c:col.c,b:col.b,done:false,desc:''};
+  });
+  return {num:weekIdx+1,label:`S${weekIdx+1}`,dates:formatWeekDates(monISO,sunISO),phase:dp.name,pc:dp.c,pb:dp.b,note:'',days};
+}
+
 function generateTemplatePlan(sport, constraints, startISO, endISO) {
   const { days: availDays, weeklyVolume } = constraints;
   const targetMin = Math.round(weeklyVolume * 60);
-  const tpl = SPORT_TEMPLATES[sport] || SPORT_TEMPLATES.velo;
+  const ev = state.config.event || {};
+  let raceTimeMin = null;
+  if (sport === 'cap' && ev.racePace && ev.format) {
+    const d = FORMAT_DIST_KM[ev.format];
+    if (d) raceTimeMin = Math.round(d * ev.racePace / 60);
+  }
   const cur = new Date(startISO + 'T12:00:00');
   const end = new Date(endISO   + 'T12:00:00');
   const totalWeeks = Math.round((end - cur) / (7 * 24 * 3600 * 1000)) + 1;
-  const weeks = [];
-  let i = 0;
+  const weeks = []; let i = 0;
   while (cur <= end) {
     const sun = new Date(cur); sun.setDate(sun.getDate() + 6);
-    const monISO = cur.toISOString().split('T')[0];
-    const sunISO = sun.toISOString().split('T')[0];
-    weeks.push(buildTemplateWeek(tpl, sport, i, totalWeeks, availDays, targetMin, monISO, sunISO));
+    weeks.push(buildSmartWeek(sport, ev, i, totalWeeks, availDays, targetMin,
+      cur.toISOString().split('T')[0], sun.toISOString().split('T')[0], raceTimeMin));
     i++; cur.setDate(cur.getDate() + 7);
   }
   return weeks;
-}
-function buildDaysFromTemplate(tpl, sport, availDays, adjustedMin) {
-  const filler = FILLER_SESSION[sport] || FILLER_SESSION.velo;
-  const dayNames = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
-  const raw = dayNames.map((n, i) => {
-    if (!availDays[i]) return null;
-    const t = tpl[i];
-    if (t.z !== 'Repos' && t.dur > 0) return {...t, n};
-    return {...filler, n};
-  });
-  const activeSum = raw.reduce((a, s) => a + (s ? (s.dur||0) : 0), 0);
-  const scale = activeSum > 0 ? adjustedMin / activeSum : 1;
-  return dayNames.map((n, i) => {
-    const s = raw[i];
-    if (!s) { const col = sessionColor('Repos','Repos'); return {n,l:'Repos',t:'Repos',dur:0,z:'Repos',c:col.c,b:col.b,done:false,desc:''}; }
-    const dur = Math.min(720, Math.round((s.dur||0) * scale / 15) * 15);
-    const col = sessionColor(s.t, s.z);
-    return {n, l:s.l, t:s.t, dur, z:s.z, c:col.c, b:col.b, done:false, desc:''};
-  });
-}
-function buildTemplateWeek(tpl, sport, weekIdx, totalWeeks, availDays, targetMin, monISO, sunISO) {
-  const phase = getPhaseForWeek(weekIdx, totalWeeks);
-  const adjusted = Math.round(targetMin * phase.factor);
-  const days = buildDaysFromTemplate(tpl, sport, availDays, adjusted);
-  return {
-    num: weekIdx+1, label:`S${weekIdx+1}`, dates:formatWeekDates(monISO, sunISO),
-    phase:phase.name, pc:phase.c, pb:phase.b, note:'', days
-  };
 }
 
 // ── PHASE DROPDOWN ────────────────────────────────────────────────────────
@@ -2353,14 +2435,18 @@ function confirmPhaseRebuild() {
   const wi = _pendingPhaseRebuild;
   const w  = state.weeks[wi];
   const sport = state.config.event?.sport || 'velo';
+  const ev = state.config.event || {};
   const constraints = state.config.constraints || {days:[true,true,true,true,true,true,true], weeklyVolume:10};
-  const tpl = SPORT_TEMPLATES[sport] || SPORT_TEMPLATES.velo;
   const targetMin = Math.round((constraints.weeklyVolume || 10) * 60);
-  const phaseDef  = PHASE_DEFS.find(p => p.name === w.phase) || PHASE_DEFS[0];
-  const adjusted  = Math.round(targetMin * phaseDef.factor);
+  let raceTimeMin = null;
+  if (sport === 'cap' && ev.racePace && ev.format) {
+    const d = FORMAT_DIST_KM[ev.format];
+    if (d) raceTimeMin = Math.round(d * ev.racePace / 60);
+  }
+  const weekIdx = state.weeks.indexOf(w);
   const doneStates = w.days.map(d => d.done);
-  w.days = buildDaysFromTemplate(tpl, sport, constraints.days, adjusted)
-    .map((d, i) => ({...d, done: doneStates[i] || false}));
+  const rebuilt = buildSmartWeek(sport, ev, weekIdx, state.weeks.length, constraints.days, targetMin, '', '', raceTimeMin);
+  w.days = rebuilt.days.map((d, i) => ({...d, done: doneStates[i] || false}));
   hidePhaseRebuildBar();
   saveState(); render();
 }
