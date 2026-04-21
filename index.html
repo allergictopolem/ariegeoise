@@ -1163,6 +1163,14 @@
   </div>
   <div id="nutrition-section"></div>
 
+  <div id="phase-rebuild-bar" style="display:none;padding:10px 16px;background:rgba(29,95,168,0.07);border:1px solid rgba(29,95,168,0.2);border-radius:4px;margin-bottom:10px;font-size:12px;color:var(--accent2);align-items:center;justify-content:space-between;gap:10px">
+    <span id="phase-rebuild-msg"></span>
+    <div style="display:flex;gap:6px;flex-shrink:0">
+      <button class="btn" onclick="hidePhaseRebuildBar()" style="font-size:11px;padding:5px 10px">Non</button>
+      <button class="btn btn-primary" onclick="confirmPhaseRebuild()" style="font-size:11px;padding:5px 10px">Oui, régénérer</button>
+    </div>
+  </div>
+
   <div class="footer">
     <span id="footer-event"></span>
     <span>Prépa3000 — outil de préparation sportive universelle</span>
@@ -1179,6 +1187,9 @@
     <div class="modal-body" style="overflow-y:auto;max-height:65vh">
       <label>Nom de l'événement</label>
       <input id="ev-name" type="text" placeholder="ex: L'Ariégeoise 2026">
+
+      <label>Date de l'événement</label>
+      <input id="ev-date" type="date">
 
       <label>Sport</label>
       <div class="sport-selector">
@@ -1497,6 +1508,12 @@ const DEFAULT_NUTRITION = {
   carbsCurrent: '70 g/h',
   hydration:    '500–800 ml/h',
   sodium:       '500–1000 mg/h',
+};
+
+const FILLER_SESSION = {
+  velo: {l:'Récupération Z1', t:'Récupération', dur:60, z:'Z1'},
+  cap:  {l:'Footing Z1',      t:'Footing',      dur:45, z:'Z1'},
+  tri:  {l:'Activation Z1',   t:'Activation',   dur:45, z:'Z1'},
 };
 
 const PHASE_DEFS = [
@@ -2097,6 +2114,7 @@ function openEventModal() {
   const ev = state.config.event || {};
   const co = state.config.constraints || {};
   document.getElementById('ev-name').value = ev.name || '';
+  document.getElementById('ev-date').value = state.config.endDate || '';
   selectSport(ev.sport || 'velo');
   if ((ev.sport||'velo') === 'velo') {
     document.getElementById('ev-velo-dist').value  = ev.distance   || '';
@@ -2172,9 +2190,14 @@ function hideGenConfirm() {
 }
 function doGeneratePlan() {
   const { ev, constraints } = readEventForm();
-  state.config.event = ev;
+  const evDate = document.getElementById('ev-date').value;
+  const startISO = _nextMonday();
+  const endISO   = evDate || state.config.endDate;
+  state.config.event       = ev;
   state.config.constraints = constraints;
-  state.weeks = generateTemplatePlan(ev.sport, constraints, state.config.startDate, state.config.endDate);
+  state.config.startDate   = startISO;
+  state.config.endDate     = endISO;
+  state.weeks = generateTemplatePlan(ev.sport, constraints, startISO, endISO);
   hideGenConfirm();
   saveState(); closeEventModal(); render();
 }
@@ -2198,22 +2221,34 @@ function generateTemplatePlan(sport, constraints, startISO, endISO) {
     const sun = new Date(cur); sun.setDate(sun.getDate() + 6);
     const monISO = cur.toISOString().split('T')[0];
     const sunISO = sun.toISOString().split('T')[0];
-    weeks.push(buildTemplateWeek(tpl, i, totalWeeks, availDays, targetMin, monISO, sunISO));
+    weeks.push(buildTemplateWeek(tpl, sport, i, totalWeeks, availDays, targetMin, monISO, sunISO));
     i++; cur.setDate(cur.getDate() + 7);
   }
   return weeks;
 }
-function buildTemplateWeek(tpl, weekIdx, totalWeeks, availDays, targetMin, monISO, sunISO) {
+function buildDaysFromTemplate(tpl, sport, availDays, adjustedMin) {
+  const filler = FILLER_SESSION[sport] || FILLER_SESSION.velo;
+  const dayNames = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
+  const raw = dayNames.map((n, i) => {
+    if (!availDays[i]) return null;
+    const t = tpl[i];
+    if (t.z !== 'Repos' && t.dur > 0) return {...t, n};
+    return {...filler, n};
+  });
+  const activeSum = raw.reduce((a, s) => a + (s ? (s.dur||0) : 0), 0);
+  const scale = activeSum > 0 ? adjustedMin / activeSum : 1;
+  return dayNames.map((n, i) => {
+    const s = raw[i];
+    if (!s) { const col = sessionColor('Repos','Repos'); return {n,l:'Repos',t:'Repos',dur:0,z:'Repos',c:col.c,b:col.b,done:false,desc:''}; }
+    const dur = Math.min(720, Math.round((s.dur||0) * scale / 15) * 15);
+    const col = sessionColor(s.t, s.z);
+    return {n, l:s.l, t:s.t, dur, z:s.z, c:col.c, b:col.b, done:false, desc:''};
+  });
+}
+function buildTemplateWeek(tpl, sport, weekIdx, totalWeeks, availDays, targetMin, monISO, sunISO) {
   const phase = getPhaseForWeek(weekIdx, totalWeeks);
   const adjusted = Math.round(targetMin * phase.factor);
-  const activeSum = tpl.reduce((a, d) => a + (d.z !== 'Repos' && d.dur > 0 ? d.dur : 0), 0);
-  const scale = activeSum > 0 ? adjusted / activeSum : 1;
-  const days = tpl.map((t, i) => {
-    const isRest = t.z === 'Repos' || !availDays[i];
-    const dur = isRest ? 0 : Math.min(720, Math.round(t.dur * scale / 15) * 15);
-    const col = sessionColor(isRest ? 'Repos' : t.t, isRest ? 'Repos' : t.z);
-    return { n:t.n, l:isRest?'Repos':t.l, t:isRest?'Repos':t.t, dur, z:isRest?'Repos':t.z, c:col.c, b:col.b, done:false, desc:'' };
-  });
+  const days = buildDaysFromTemplate(tpl, sport, availDays, adjusted);
   return {
     num: weekIdx+1, label:`S${weekIdx+1}`, dates:formatWeekDates(monISO, sunISO),
     phase:phase.name, pc:phase.c, pb:phase.b, note:'', days
@@ -2238,13 +2273,47 @@ function openPhaseDropdown(wi, el) {
   dd.style.top  = (rect.bottom + window.scrollY + 4) + 'px';
   dd.style.left = rect.left + 'px';
 }
+let _pendingPhaseRebuild = null;
 function selectPhase(wi, idx) {
   const p = _ddPhases[idx];
+  const prevPhase = state.weeks[wi].phase;
   state.weeks[wi].phase = p.name;
   state.weeks[wi].pc = p.c;
   state.weeks[wi].pb = p.b;
   closePhaseDropdown();
   saveState(); render();
+  const hasActivity = state.weeks[wi].days.some(d => d.t !== 'Repos' && d.dur > 0);
+  if (hasActivity && state.config.event?.sport && prevPhase !== p.name) {
+    _pendingPhaseRebuild = wi;
+    const bar = document.getElementById('phase-rebuild-bar');
+    if (bar) {
+      document.getElementById('phase-rebuild-msg').textContent =
+        `Régénérer les séances de ${state.weeks[wi].label} selon la phase "${p.name}" ?`;
+      bar.style.display = 'flex';
+      bar.scrollIntoView({behavior:'smooth', block:'nearest'});
+    }
+  }
+}
+function confirmPhaseRebuild() {
+  if (_pendingPhaseRebuild === null) return;
+  const wi = _pendingPhaseRebuild;
+  const w  = state.weeks[wi];
+  const sport = state.config.event?.sport || 'velo';
+  const constraints = state.config.constraints || {days:[true,true,true,true,true,true,true], weeklyVolume:10};
+  const tpl = SPORT_TEMPLATES[sport] || SPORT_TEMPLATES.velo;
+  const targetMin = Math.round((constraints.weeklyVolume || 10) * 60);
+  const phaseDef  = PHASE_DEFS.find(p => p.name === w.phase) || PHASE_DEFS[0];
+  const adjusted  = Math.round(targetMin * phaseDef.factor);
+  const doneStates = w.days.map(d => d.done);
+  w.days = buildDaysFromTemplate(tpl, sport, constraints.days, adjusted)
+    .map((d, i) => ({...d, done: doneStates[i] || false}));
+  hidePhaseRebuildBar();
+  saveState(); render();
+}
+function hidePhaseRebuildBar() {
+  const bar = document.getElementById('phase-rebuild-bar');
+  if (bar) bar.style.display = 'none';
+  _pendingPhaseRebuild = null;
 }
 function addCustomPhase() {
   const name = document.getElementById('phase-dd-input').value.trim();
