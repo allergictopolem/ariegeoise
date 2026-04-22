@@ -499,6 +499,7 @@
   /* DONE PILL */
   .day-pill.done { opacity: 0.45; }
   .day-pill.done .day-pill-name { text-decoration: line-through; }
+  .day-pill.unplanned { border: 1.5px dashed rgba(252,76,2,0.5); }
 
   /* DONE BUTTON */
   .done-btn {
@@ -1417,60 +1418,62 @@
 <div id="modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
   <div class="modal-box">
     <div class="modal-header">
-      <span class="modal-title">Modifier la séance</span>
+      <span class="modal-title" id="modal-title">Modifier la séance</span>
       <button class="modal-close" onclick="closeModal()">×</button>
     </div>
     <div class="modal-body">
-      <label>Nom de la séance</label>
-      <input id="m-name" type="text" placeholder="ex: Col Z3">
-      <label>Type</label>
-      <select id="m-type" onchange="onZoneChange()">
-        <option>Repos</option>
-        <option>Récupération</option>
-        <option>Activation</option>
-        <optgroup label="🚴 Vélo">
-          <option>Endurance</option>
-          <option>Col</option>
-          <option>HT Endurance</option>
-          <option>HT Tempo</option>
-          <option>HT Col</option>
-        </optgroup>
-        <optgroup label="🏃 Course à pied">
-          <option>Footing</option>
-          <option>Sortie longue</option>
-          <option>Fractionné</option>
-          <option>Tempo</option>
-          <option>Côtes</option>
-        </optgroup>
-        <optgroup label="🏊 Natation / Tri">
-          <option>Nage endurance</option>
-          <option>Nage technique</option>
-          <option>Brique</option>
-        </optgroup>
-        <option>Test</option>
-        <option>Voyage</option>
-        <option>Événement</option>
-      </select>
-      <label>Zone d'intensité</label>
-      <select id="m-zone" onchange="onZoneChange()">
-        <option value="Repos">Repos</option>
-        <option value="Z1">Z1 — Récupération active</option>
-        <option value="Z2">Z2 — Endurance fond</option>
-        <option value="Z3">Z3 — Tempo / Col</option>
-        <option value="Z4">Z4 — Seuil</option>
-        <option value="Mixed">Mixte — Sortie longue</option>
-      </select>
-      <label>Durée (minutes)</label>
-      <input id="m-dur" type="number" min="0" max="720" step="15">
-      <label>Compte-rendu / notes</label>
-      <textarea id="m-desc" placeholder="Notes après la séance…"></textarea>
+      <div id="m-edit-fields">
+        <label>Nom de la séance</label>
+        <input id="m-name" type="text" placeholder="ex: Col Z3">
+        <label>Type</label>
+        <select id="m-type" onchange="onZoneChange()">
+          <option>Repos</option>
+          <option>Récupération</option>
+          <option>Activation</option>
+          <optgroup label="🚴 Vélo">
+            <option>Endurance</option>
+            <option>Col</option>
+            <option>HT Endurance</option>
+            <option>HT Tempo</option>
+            <option>HT Col</option>
+          </optgroup>
+          <optgroup label="🏃 Course à pied">
+            <option>Footing</option>
+            <option>Sortie longue</option>
+            <option>Fractionné</option>
+            <option>Tempo</option>
+            <option>Côtes</option>
+          </optgroup>
+          <optgroup label="🏊 Natation / Tri">
+            <option>Nage endurance</option>
+            <option>Nage technique</option>
+            <option>Brique</option>
+          </optgroup>
+          <option>Test</option>
+          <option>Voyage</option>
+          <option>Événement</option>
+        </select>
+        <label>Zone d'intensité</label>
+        <select id="m-zone" onchange="onZoneChange()">
+          <option value="Repos">Repos</option>
+          <option value="Z1">Z1 — Récupération active</option>
+          <option value="Z2">Z2 — Endurance fond</option>
+          <option value="Z3">Z3 — Tempo / Col</option>
+          <option value="Z4">Z4 — Seuil</option>
+          <option value="Mixed">Mixte — Sortie longue</option>
+        </select>
+        <label>Durée (minutes)</label>
+        <input id="m-dur" type="number" min="0" max="720" step="15">
+        <label>Compte-rendu / notes</label>
+        <textarea id="m-desc" placeholder="Notes après la séance…"></textarea>
+      </div>
       <div id="m-strava-recap" style="display:none;margin-top:10px;padding:10px 12px;background:rgba(252,76,2,0.05);border:1px solid rgba(252,76,2,0.18);border-radius:5px;font-family:var(--font-mono);font-size:10px;color:var(--ink2);line-height:1.8"></div>
     </div>
     <div class="modal-footer">
       <button id="m-delete-btn" class="btn" style="color:var(--accent);display:none" onclick="removeSessionFromModal()">Supprimer</button>
       <div style="display:flex;gap:8px">
         <button class="btn" onclick="closeModal()">Annuler</button>
-        <button class="btn btn-primary" onclick="saveSession()">Enregistrer</button>
+        <button id="m-save-btn" class="btn btn-primary" onclick="saveSession()">Enregistrer</button>
       </div>
     </div>
   </div>
@@ -1740,6 +1743,7 @@ function initState() {
               if (s.done===undefined) s.done=false;
               if (s.desc===undefined) s.desc='';
               if (s.strava===undefined) s.strava=null;
+              if (s.unplanned===undefined) s.unplanned=false;
             });
             return d;
           }
@@ -1845,14 +1849,22 @@ function openModal(wi, di, si) {
   document.getElementById('m-zone').value = s?.z || 'Z2';
   document.getElementById('m-dur').value  = s?.dur ?? 60;
   document.getElementById('m-desc').value = s?.desc || '';
+  // Unplanned Strava session → read-only recap only
+  const isUnplanned = s?.unplanned === true;
+  const titleEl = document.getElementById('modal-title');
+  if (titleEl) titleEl.textContent = isUnplanned ? 'Activité Strava non planifiée' : 'Modifier la séance';
+  const editFields = document.getElementById('m-edit-fields');
+  if (editFields) editFields.style.display = isUnplanned ? 'none' : '';
+  const saveBtn = document.getElementById('m-save-btn');
+  if (saveBtn) saveBtn.style.display = isUnplanned ? 'none' : '';
+  const delBtn2 = document.getElementById('m-delete-btn');
+  if (delBtn2) delBtn2.style.display = isUnplanned ? 'none' : (si >= 0 ? 'inline-block' : 'none');
   const recap = document.getElementById('m-strava-recap');
   if (recap) {
-    const act = s?.strava?.act;
+    const act = isUnplanned ? s.strava : s?.strava?.act || s?.strava;
     recap.style.display = act ? 'block' : 'none';
     recap.innerHTML = act ? buildStravaRecap(act) : '';
   }
-  const delBtn = document.getElementById('m-delete-btn');
-  if (delBtn) delBtn.style.display = (si >= 0) ? 'inline-block' : 'none';
   document.getElementById('modal').style.display = 'flex';
   onZoneChange();
 }
@@ -1885,7 +1897,8 @@ function saveSession() {
 }
 
 function addSession(wi, di) {
-  if (state.weeks[wi].days[di].sessions.length >= 3) return;
+  const planned = state.weeks[wi].days[di].sessions.filter(s => !s.unplanned);
+  if (planned.length >= 3) return;
   openModal(wi, di, -1);
 }
 function removeSessionFromModal() {
@@ -2038,6 +2051,18 @@ function renderWeeks() {
       }
       const sessions = day.sessions || [];
       const sessionsHtml = sessions.map((s, si) => {
+        // Unplanned Strava session → orange read-only pill
+        if (s.unplanned) {
+          const sh = stravaShortStats(s.strava);
+          return `<div class="session-wrap">
+            <div class="day-pill unplanned" style="color:#FC4C02;background:rgba(252,76,2,0.07)"
+                 title="${stravaStats(s.strava)}" onclick="openModal(${wi},${di},${si})">
+              <span class="day-pill-name">${s.l}</span>
+              <span class="day-type" style="color:#FC4C02;opacity:0.8">STRAVA</span>
+              <span class="day-nutri">${sh}</span>
+            </div>
+          </div>`;
+        }
         const tl = (s.t!=='Repos'&&s.t!=='Voyage') ? `<span class="day-type">${s.t}</span>` : '';
         const pace = (_isCap && _racePace > 0 && s.z !== 'Repos') ? getPaceLabel(s.z, _racePace) : null;
         const paceHtml = pace ? `<span class="day-pace">${pace}</span>` : '';
@@ -2067,7 +2092,8 @@ function renderWeeks() {
       }).join('');
       const isRest = sessions.length===0;
       const restHtml = isRest ? `<div class="day-pill" style="color:#9A9590;background:rgba(122,118,112,0.06);cursor:pointer" onclick="addSession(${wi},${di})"><span class="day-pill-name" style="opacity:0.45">Repos</span></div>` : '';
-      const addBtn = sessions.length<3 ? `<button class="day-add-btn" onclick="addSession(${wi},${di})">+</button>` : '';
+      const plannedCount = sessions.filter(s => !s.unplanned).length;
+      const addBtn = plannedCount<3 ? `<button class="day-add-btn" onclick="addSession(${wi},${di})">+</button>` : '';
       return `<div class="day-col"
           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)"
           ondrop="onDropSession(event,${wi},${di})">
@@ -2977,6 +3003,31 @@ async function stravaRefreshTokenIfNeeded() {
   saveState();
 }
 
+function getDayDate(wi, di) {
+  if (!state.config.startDate) return null;
+  const d = new Date(state.config.startDate + 'T12:00:00');
+  d.setDate(d.getDate() + wi * 7 + di);
+  return d.toISOString().split('T')[0];
+}
+function getSessionSport(s, planSport) {
+  if (planSport !== 'tri') return planSport;
+  const label = (s.l || '').toLowerCase();
+  const type  = (s.t || '').toLowerCase();
+  if (/vélo|velo|bike|cycl/.test(label)) return 'velo';
+  if (/nat|swim|nage/.test(label)) return 'nat';
+  if (/cap|run|footing|course/.test(label)) return 'cap';
+  if (/endurance|col|ht /.test(type)) return 'velo';
+  if (/footing|fractionné|tempo|côtes|sortie/.test(type)) return 'cap';
+  if (/nage/.test(type)) return 'nat';
+  return planSport;
+}
+function getStravaSport(stravaType) {
+  if (['Ride','VirtualRide','MountainBikeRide','GravelRide','EBikeRide'].includes(stravaType)) return 'velo';
+  if (['Run','TrailRun','VirtualRun'].includes(stravaType)) return 'cap';
+  if (['Swim'].includes(stravaType)) return 'nat';
+  return 'other';
+}
+
 async function stravaSync() {
   const st = state.config.strava;
   if (!st?.refreshToken) { openStravaModal(); return; }
@@ -2989,39 +3040,68 @@ async function stravaSync() {
     });
     if (!resp.ok) throw new Error('API error: ' + resp.status);
     const activities = await resp.json();
-    // Clear previous strava data
-    state.weeks.forEach(w => w.days.forEach(d => { (d.sessions||[]).forEach(s => { s.strava=null; }); }));
-    const sport = state.config.event?.sport || 'velo';
-    // Sort by start_date ascending so earlier activity is "main"
-    activities.sort((a,b) => a.start_date < b.start_date ? -1 : 1);
+
+    // Group activities by local date, sorted chronologically
+    activities.sort((a,b) => (a.start_date_local||a.start_date) < (b.start_date_local||b.start_date) ? -1 : 1);
+    const actsByDate = {};
     activities.forEach(act => {
-      const dateISO = act.start_date.split('T')[0];
-      const match = stravaFindDay(dateISO);
-      if (!match) return;
-      const {wi, di} = match;
-      const d = state.weeks[wi].days[di];
-      const sessions = d.sessions || [];
-      const isPlanned = sessions.some(s => s.t !== 'Repos' && s.dur > 0);
-      const matchesSport = stravaTypeMatchesSport(act.sport_type||act.type, sport);
-      // Find best matching session (by sport type, first without strava data)
-      const matchIdx = sessions.findIndex(s => s.t !== 'Repos' && !s.strava && stravaTypeMatchesSport(act.sport_type||act.type, sport));
-      if (!isPlanned) {
-        // Case B: rest day + any activity
-        if (sessions.length > 0 && !sessions[0].strava) sessions[0].strava = {case:'B', act};
-      } else if (matchIdx >= 0) {
-        // Case A: matching session found
-        sessions[matchIdx].strava = {case:'A', act};
-        sessions[matchIdx].done = true;
-      } else if (matchesSport) {
-        // Case C: extra activity, all matching sessions already have strava
-        const lastMatch = [...sessions].reverse().find(s => s.t !== 'Repos');
-        if (lastMatch) lastMatch.strava = {case:'C', act};
-      } else {
-        // Case D: wrong sport type
-        const first = sessions.find(s => !s.strava);
-        if (first) first.strava = {case:'D', act};
-      }
+      const dateISO = (act.start_date_local || act.start_date).split('T')[0];
+      (actsByDate[dateISO] = actsByDate[dateISO] || []).push(act);
     });
+
+    const sport = state.config.event?.sport || 'velo';
+
+    state.weeks.forEach((w, wi) => {
+      w.days.forEach((day, di) => {
+        // Remove unplanned sessions from previous sync
+        day.sessions = day.sessions.filter(s => !s.unplanned);
+        // Clear strava from planned sessions
+        day.sessions.forEach(s => { s.strava = null; });
+
+        const dateISO = getDayDate(wi, di);
+        const dayActs = dateISO ? (actsByDate[dateISO] || []) : [];
+        if (dayActs.length === 0) return;
+
+        // Group planned sessions by sport type
+        const plannedBySport = {};
+        day.sessions.forEach(s => {
+          const sp = getSessionSport(s, sport);
+          (plannedBySport[sp] = plannedBySport[sp] || []).push(s);
+        });
+
+        // Match each activity to first available planned session of same sport
+        const unmatched = [];
+        dayActs.forEach(act => {
+          const actSport = getStravaSport(act.sport_type || act.type || '');
+          const candidates = plannedBySport[actSport] || [];
+          const match = candidates.find(s => !s.strava);
+          if (match) {
+            match.strava = act;
+            match.done = true;
+          } else {
+            unmatched.push(act);
+          }
+        });
+
+        // Inject unmatched as unplanned orange sessions
+        unmatched.forEach(act => {
+          const dur = Math.round((act.moving_time || 0) / 60);
+          day.sessions.push({
+            unplanned: true,
+            l: act.name || act.sport_type || act.type || 'Activité',
+            t: 'Strava',
+            dur,
+            z: 'Z2',
+            c: '#FC4C02',
+            b: 'rgba(252,76,2,0.07)',
+            done: true,
+            desc: '',
+            strava: act,
+          });
+        });
+      });
+    });
+
     state.config.strava.lastSync = Date.now();
     saveState(); render();
   } catch(err) {
@@ -3067,7 +3147,10 @@ function stravaConnect() {
 
 function stravaDisconnect() {
   state.config.strava = { clientId: state.config.strava.clientId, clientSecret: state.config.strava.clientSecret, refreshToken:'', accessToken:'', tokenExpiry:0, lastSync:0 };
-  state.weeks.forEach(w => w.days.forEach(d => { (d.sessions||[]).forEach(s => { s.strava=null; }); }));
+  state.weeks.forEach(w => w.days.forEach(d => {
+    d.sessions = (d.sessions||[]).filter(s => !s.unplanned);
+    d.sessions.forEach(s => { s.strava = null; });
+  }));
   saveState(); render(); closeStravaModal();
 }
 
