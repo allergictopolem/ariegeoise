@@ -3076,7 +3076,7 @@ async function stravaSync() {
           const candidates = plannedBySport[actSport] || [];
           const match = candidates.find(s => !s.strava);
           if (match) {
-            match.strava = act;
+            match.strava = {case:'A', act};
             match.done = true;
           } else {
             unmatched.push(act);
