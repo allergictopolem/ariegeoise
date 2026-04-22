@@ -937,9 +937,10 @@
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
       padding: 8px;
-      grid-template-columns: repeat(7, minmax(60px, 1fr));
+      grid-template-columns: repeat(7, 76px);
     }
     .week-days::-webkit-scrollbar { display: none; }
+    .day-add-btn { opacity: 0.4 !important; }
 
     /* Cal config */
     .cal-config { gap: 8px; }
@@ -1037,7 +1038,44 @@
   @media (max-width: 960px) {
     .weeks-with-panel { grid-template-columns: 1fr; }
     .session-panel { display: none; }
+    #mobile-session-panel { display: block; }
   }
+
+  /* MOBILE SESSION PANEL */
+  #mobile-session-panel { display: none; margin-bottom: 1rem; }
+  .msp-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
+  .msp-tab {
+    flex: 1; padding: 5px 4px;
+    border: 1px solid var(--border); border-radius: 3px;
+    background: none; cursor: pointer;
+    font-family: var(--font-mono); font-size: 10px;
+    color: var(--ink3); transition: all 0.1s; text-align: center;
+  }
+  .msp-tab.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .msp-strip {
+    display: flex; gap: 6px;
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; padding-bottom: 4px;
+  }
+  .msp-strip::-webkit-scrollbar { display: none; }
+  .msp-chip {
+    flex-shrink: 0; padding: 6px 10px; border-radius: 4px;
+    cursor: pointer; font-family: var(--font-mono); font-size: 10px;
+    white-space: nowrap; border: 1px solid rgba(0,0,0,0.06);
+    line-height: 1.4; transition: filter 0.1s; text-align: center;
+  }
+  .msp-chip:active { filter: brightness(0.88); }
+
+  /* DAY PICKER */
+  .dp-day-btn {
+    padding: 8px 2px; border-radius: 4px;
+    border: 1px solid var(--border); background: var(--bg2);
+    cursor: pointer; font-family: var(--font-mono);
+    font-size: 10px; text-align: center; transition: all 0.1s;
+    width: 100%;
+  }
+  .dp-day-btn:not(.dp-full):active { background: var(--ink); color: var(--bg); }
+  .dp-day-btn.dp-full { opacity: 0.3; cursor: not-allowed; }
 
   /* STRAVA */
   .strava-sync-btn {
@@ -1215,6 +1253,7 @@
         <span id="strava-btn-wrap" style="margin-left:auto"></span>
       </div>
       <div id="global-stats"></div>
+      <div id="mobile-session-panel"></div>
       <div class="weeks" id="weeks"></div>
       <div style="position:relative">
         <button class="add-week-btn" onclick="openAddWeekMenu(event)">+ Ajouter une semaine</button>
@@ -1411,6 +1450,23 @@
     </div>
     <div class="modal-body">
       <div id="strava-modal-content"></div>
+    </div>
+  </div>
+</div>
+
+<div id="day-picker-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeDayPicker()">
+  <div class="modal-box" style="max-width:340px">
+    <div class="modal-header">
+      <span class="modal-title" id="dp-title">Choisir un jour</span>
+      <button class="modal-close" onclick="closeDayPicker()">×</button>
+    </div>
+    <div class="modal-body" style="padding:12px 14px 16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <button class="btn" id="dp-prev" onclick="dayPickerNav(-1)">←</button>
+        <div id="dp-week-label" style="flex:1;text-align:center;font-size:10px;font-family:var(--font-mono);line-height:1.5"></div>
+        <button class="btn" id="dp-next" onclick="dayPickerNav(1)">→</button>
+      </div>
+      <div id="dp-days" style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px"></div>
     </div>
   </div>
 </div>
@@ -1919,7 +1975,7 @@ function resetState() {
 }
 
 // ── RENDER ─────────────────────────────────────────────────────────────────
-function render() { renderMasthead(); renderCalendarConfig(); renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); renderSessionPanel(); renderPhaseTable(); renderSessionTypes(); renderNutrition(); renderPaceZones(); renderStravaBtn(); }
+function render() { renderMasthead(); renderCalendarConfig(); renderWeeks(); renderChart(); renderAdaptations(); renderGlobalStats(); renderSessionPanel(); renderMobileSessionPanel(); renderPhaseTable(); renderSessionTypes(); renderNutrition(); renderPaceZones(); renderStravaBtn(); }
 
 function getEventStats(ev) {
   const s = [];
@@ -2236,6 +2292,9 @@ function renderPaceZones() {
 
 // ── SESSION PANEL ─────────────────────────────────────────────────────────
 let _panelSport = null;
+let _mspSport   = null;  // active sport tab in mobile panel
+let _mspSession = null;  // session being placed via day picker
+let _dpWeekIdx  = 0;     // current week index in day picker
 let _panelLib   = [];
 
 function renderSessionPanel() {
@@ -2268,6 +2327,103 @@ function renderSessionPanel() {
 function selectPanelSport(sport) {
   _panelSport = sport;
   renderSessionPanel();
+}
+
+// ── MOBILE SESSION PANEL ───────────────────────────────────────────────────
+function renderMobileSessionPanel() {
+  const el = document.getElementById('mobile-session-panel');
+  if (!el) return;
+  if (!hasPlan()) { el.innerHTML = ''; return; }
+  const sport = _mspSport || state.config.event?.sport || 'velo';
+  const lib   = SESSION_LIBRARY[sport] || SESSION_LIBRARY.velo;
+  const tabs  = [{key:'velo',lbl:'🚴 Vélo'},{key:'cap',lbl:'🏃 CAP'},{key:'tri',lbl:'🏊 Tri'}];
+  el.innerHTML = `
+    <div class="msp-tabs">
+      ${tabs.map(t => `<button class="msp-tab ${sport===t.key?'active':''}" onclick="setMspTab('${t.key}')">${t.lbl}</button>`).join('')}
+    </div>
+    <div class="msp-strip">
+      ${lib.map((s,i) => {
+        const col = sessionColor(s.t, s.z);
+        return `<div class="msp-chip" style="color:${col.c};background:${col.b}" onclick="mspTapSession(${i})">
+          ${s.l}<br><span style="opacity:0.6;font-size:8px">${s.z!=='Repos'?formatDur(s.dur)+' · ':''}${s.z}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+function setMspTab(sport) {
+  _mspSport = sport;
+  renderMobileSessionPanel();
+}
+
+function mspTapSession(idx) {
+  const sport = _mspSport || state.config.event?.sport || 'velo';
+  const lib   = SESSION_LIBRARY[sport] || SESSION_LIBRARY.velo;
+  _mspSession = lib[idx];
+  _dpWeekIdx  = 0;
+  openDayPicker();
+}
+
+function openDayPicker() {
+  if (!state.weeks.length || !_mspSession) return;
+  renderDayPicker();
+  document.getElementById('day-picker-modal').style.display = 'flex';
+}
+
+function closeDayPicker() {
+  document.getElementById('day-picker-modal').style.display = 'none';
+  _mspSession = null;
+}
+
+function dayPickerNav(delta) {
+  _dpWeekIdx = Math.max(0, Math.min(state.weeks.length - 1, _dpWeekIdx + delta));
+  renderDayPicker();
+}
+
+function renderDayPicker() {
+  if (!state.weeks.length) return;
+  const w     = state.weeks[_dpWeekIdx];
+  const total = state.weeks.length;
+  document.getElementById('dp-prev').disabled = _dpWeekIdx === 0;
+  document.getElementById('dp-next').disabled = _dpWeekIdx === total - 1;
+  document.getElementById('dp-week-label').innerHTML =
+    `<strong>S${_dpWeekIdx+1} · ${w.label}</strong><br><span style="color:${w.pc||'var(--ink3)'}">${w.phase}</span>`;
+  document.getElementById('dp-title').textContent =
+    `Ajouter : ${_mspSession?.l || 'Séance'}`;
+
+  const weekStart = state.config.startDate ? new Date(state.config.startDate + 'T12:00:00') : null;
+  if (weekStart) weekStart.setDate(weekStart.getDate() + _dpWeekIdx * 7);
+
+  document.getElementById('dp-days').innerHTML = w.days.map((day, di) => {
+    let dateNum = '';
+    if (weekStart) {
+      const dd = new Date(weekStart); dd.setDate(weekStart.getDate() + di);
+      dateNum = dd.getDate();
+    }
+    const plannedCount = (day.sessions||[]).filter(s => !s.unplanned).length;
+    const full = plannedCount >= 3;
+    const dots = plannedCount > 0 ? '●'.repeat(plannedCount) : '·';
+    return `<button class="dp-day-btn${full?' dp-full':''}"
+      onclick="${full ? '' : `dayPickerAddDay(${_dpWeekIdx},${di})`}"
+      ${full ? 'disabled' : ''}>
+      <div style="font-weight:700">${day.n}</div>
+      ${dateNum ? `<div style="font-size:9px;opacity:0.6">${dateNum}</div>` : ''}
+      <div style="font-size:8px;opacity:0.45;margin-top:2px;letter-spacing:-1px">${dots}</div>
+    </button>`;
+  }).join('');
+}
+
+function dayPickerAddDay(wi, di) {
+  if (!_mspSession) return;
+  const day = state.weeks[wi].days[di];
+  const plannedCount = (day.sessions||[]).filter(s => !s.unplanned).length;
+  if (plannedCount >= 3) return;
+  const col = sessionColor(_mspSession.t, _mspSession.z);
+  day.sessions.push({
+    l:_mspSession.l, t:_mspSession.t, dur:_mspSession.dur, z:_mspSession.z,
+    c:col.c, b:col.b, done:false, desc:'', strava:null, unplanned:false
+  });
+  saveState(); closeDayPicker(); render();
 }
 
 // ── PHASE TABLE ────────────────────────────────────────────────────────────
