@@ -7,6 +7,17 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@800&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%23141210'/><polygon points='4,28 15,7 26,28' fill='%233A9ED4'/><polygon points='13,28 23,14 32,28' fill='%23F5C518' opacity='.9'/><polygon points='12,11 15,7 18,11' fill='white' opacity='.9'/></svg>">
 <link rel="apple-touch-icon" id="apple-touch-icon-link">
+<script>
+(function(){try{
+  var c=document.createElement('canvas');c.width=c.height=180;
+  var x=c.getContext('2d');
+  x.fillStyle='#141210';x.fillRect(0,0,180,180);
+  x.fillStyle='#3A9ED4';x.beginPath();x.moveTo(22,156);x.lineTo(85,40);x.lineTo(148,156);x.closePath();x.fill();
+  x.fillStyle='#F5C518';x.globalAlpha=.9;x.beginPath();x.moveTo(74,156);x.lineTo(130,78);x.lineTo(180,156);x.closePath();x.fill();
+  x.fillStyle='#fff';x.beginPath();x.moveTo(67,63);x.lineTo(85,40);x.lineTo(103,63);x.closePath();x.fill();
+  document.getElementById('apple-touch-icon-link').href=c.toDataURL('image/png');
+}catch(e){}})();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prépa3000">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -938,7 +949,9 @@
       scrollbar-width: none;
       padding: 8px;
       grid-template-columns: repeat(7, 76px);
+      min-width: 0;
     }
+    .week { overflow: visible; }
     .week-days::-webkit-scrollbar { display: none; }
     .day-add-btn { opacity: 0.4 !important; }
 
@@ -3463,32 +3476,7 @@ function endTour() {
   setUI({ hasToured: true });
 }
 
-function generateAppIcon() {
-  try {
-    const size = 180;
-    const c = document.createElement('canvas');
-    c.width = c.height = size;
-    const ctx = c.getContext('2d');
-    // Background
-    ctx.fillStyle = '#141210';
-    ctx.fillRect(0, 0, size, size);
-    // Blue triangle (main)
-    ctx.fillStyle = '#3A9ED4';
-    ctx.beginPath(); ctx.moveTo(22,156); ctx.lineTo(85,40); ctx.lineTo(148,156); ctx.closePath(); ctx.fill();
-    // Yellow triangle (right)
-    ctx.fillStyle = '#F5C518'; ctx.globalAlpha = 0.9;
-    ctx.beginPath(); ctx.moveTo(74,156); ctx.lineTo(130,78); ctx.lineTo(180,156); ctx.closePath(); ctx.fill();
-    // White tip
-    ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.9;
-    ctx.beginPath(); ctx.moveTo(67,63); ctx.lineTo(85,40); ctx.lineTo(103,63); ctx.closePath(); ctx.fill();
-    ctx.globalAlpha = 1;
-    const link = document.getElementById('apple-touch-icon-link');
-    if (link) link.href = c.toDataURL('image/png');
-  } catch(e) { /* canvas not available */ }
-}
-
 async function main() {
-  generateAppIcon();
   await stravaHandleCallback();
   render();
   const st = state.config.strava;
