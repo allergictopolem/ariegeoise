@@ -1348,7 +1348,7 @@
       <div id="gen-validation-msg" style="display:none;margin-top:8px;padding:8px 10px;background:rgba(212,82,42,0.07);border-left:2px solid var(--accent);border-radius:3px;font-family:var(--font-mono);font-size:10px;color:var(--accent);line-height:1.6"></div>
     </div>
     <div id="gen-confirm-bar" style="display:none;padding:10px 18px;background:rgba(212,82,42,0.07);border-top:1px solid rgba(212,82,42,0.2);font-size:12px;color:var(--accent);display:none;align-items:center;justify-content:space-between;gap:10px">
-      <span>⚠ Remplacera tout le plan — confirmer ?</span>
+      <span id="gen-confirm-text">⚠ Remplacera tout le plan — confirmer ?</span>
       <div style="display:flex;gap:6px">
         <button class="btn" onclick="hideGenConfirm()" style="font-size:11px;padding:5px 10px">Non</button>
         <button class="btn btn-warn" onclick="doGeneratePlan()" style="font-size:11px;padding:5px 10px">Oui, générer</button>
@@ -2451,8 +2451,31 @@ function saveEventConfig() {
   state.config.constraints = constraints;
   saveState(); closeEventModal(); render();
 }
+function parseRaceDurationHours(s) {
+  if (!s) return null;
+  s = s.trim().toLowerCase();
+  const hm = s.match(/(\d+)\s*h\s*(\d+)?/);
+  if (hm) return parseInt(hm[1]) + (parseInt(hm[2]||'0') / 60);
+  const dec = s.match(/([\d]+[.,][\d]+)\s*h?/);
+  if (dec) return parseFloat(dec[1].replace(',','.'));
+  const num = s.match(/^(\d+)$/);
+  if (num) return parseInt(num[1]);
+  return null;
+}
+
 function showGenConfirm() {
   if (!validateEventForm()) return;
+  let msg = '⚠ Remplacera tout le plan — confirmer ?';
+  if (_currentSport === 'velo') {
+    const ev = readEventForm().ev;
+    const raceDurH = parseRaceDurationHours(ev.temps);
+    const weeklyVol = parseFloat(document.getElementById('ev-volume').value) || 0;
+    if (raceDurH && weeklyVol < raceDurH * 0.9) {
+      msg = `⚠ Volume hebdo (${weeklyVol}h) inférieur à la durée de course (~${Math.round(raceDurH)}h) — continuer quand même ?`;
+    }
+  }
+  const txt = document.getElementById('gen-confirm-text');
+  if (txt) txt.textContent = msg;
   const bar = document.getElementById('gen-confirm-bar');
   if (bar) bar.style.display = 'flex';
 }
@@ -2591,6 +2614,22 @@ function buildSmartWeek(sport, ev, weekIdx, totalWeeks, availDays, targetMin, mo
   return {num:weekIdx+1,label:`S${weekIdx+1}`,dates:formatWeekDates(monISO,sunISO),phase:dp.name,pc:dp.c,pb:dp.b,note:'',days};
 }
 
+function buildTestSession(sport, ev) {
+  if (sport !== 'cap') return null;
+  const fmt = ev.format;
+  if (!['marathon','semi'].includes(fmt)) return null;
+  const racePaceSec = parseInt(ev.racePace);
+  if (!racePaceSec) return null;
+  const isMarathon = fmt === 'marathon';
+  const testKm  = isMarathon ? 36 : 18;
+  const intKm   = isMarathon ? 10 : 5;
+  const testMin = Math.round(testKm * racePaceSec / 60);
+  const label   = isMarathon ? '3×10km allure cible' : '3×5km allure cible';
+  const desc    = `2km éch. · ${intKm}km allure · 1km récup · ${intKm}km allure · 1km récup · ${intKm}km allure · 2km cool — ${testKm}km total`;
+  const col     = sessionColor('Test', 'Z4');
+  return { l:label, t:'Test', z:'Z4', dur:testMin, desc, c:col.c, b:col.b };
+}
+
 function generateTemplatePlan(sport, constraints, startISO, endISO) {
   const { days: availDays, weeklyVolume } = constraints;
   const targetMin = Math.round(weeklyVolume * 60);
@@ -2610,6 +2649,24 @@ function generateTemplatePlan(sport, constraints, startISO, endISO) {
       cur.toISOString().split('T')[0], sun.toISOString().split('T')[0], raceTimeMin));
     i++; cur.setDate(cur.getDate() + 7);
   }
+
+  // Inject test session on last week of Spécifique (CAP marathon/semi)
+  const testSess = buildTestSession(sport, ev);
+  if (testSess) {
+    let lastSpecIdx = -1;
+    weeks.forEach((w, idx) => { if (w.phase === 'Spécifique') lastSpecIdx = idx; });
+    if (lastSpecIdx >= 0) {
+      const tw = weeks[lastSpecIdx];
+      const longDayIdx = tw.days.findIndex(d => d.t === 'Sortie longue');
+      if (longDayIdx >= 0) {
+        const day = tw.days[longDayIdx];
+        day.l = testSess.l; day.t = testSess.t; day.z = testSess.z;
+        day.dur = testSess.dur; day.desc = testSess.desc;
+        day.c = testSess.c; day.b = testSess.b;
+      }
+    }
+  }
+
   return weeks;
 }
 
