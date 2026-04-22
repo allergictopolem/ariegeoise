@@ -6,7 +6,7 @@
 <title>Prépa3000 — Plan de préparation sportive</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Nunito:wght@800&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='5' fill='%23141210'/><polygon points='4,28 15,7 26,28' fill='%233A9ED4'/><polygon points='13,28 23,14 32,28' fill='%23F5C518' opacity='.9'/><polygon points='12,11 15,7 18,11' fill='white' opacity='.9'/></svg>">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='38' fill='%23141210'/><polygon points='22,156 85,40 148,156' fill='%233A9ED4'/><polygon points='74,156 130,78 180,156' fill='%23F5C518' opacity='.9'/><polygon points='67,63 85,40 103,63' fill='white' opacity='.9'/></svg>">
+<link rel="apple-touch-icon" id="apple-touch-icon-link">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Prépa3000">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -3463,7 +3463,32 @@ function endTour() {
   setUI({ hasToured: true });
 }
 
+function generateAppIcon() {
+  try {
+    const size = 180;
+    const c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    // Background
+    ctx.fillStyle = '#141210';
+    ctx.fillRect(0, 0, size, size);
+    // Blue triangle (main)
+    ctx.fillStyle = '#3A9ED4';
+    ctx.beginPath(); ctx.moveTo(22,156); ctx.lineTo(85,40); ctx.lineTo(148,156); ctx.closePath(); ctx.fill();
+    // Yellow triangle (right)
+    ctx.fillStyle = '#F5C518'; ctx.globalAlpha = 0.9;
+    ctx.beginPath(); ctx.moveTo(74,156); ctx.lineTo(130,78); ctx.lineTo(180,156); ctx.closePath(); ctx.fill();
+    // White tip
+    ctx.fillStyle = '#ffffff'; ctx.globalAlpha = 0.9;
+    ctx.beginPath(); ctx.moveTo(67,63); ctx.lineTo(85,40); ctx.lineTo(103,63); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha = 1;
+    const link = document.getElementById('apple-touch-icon-link');
+    if (link) link.href = c.toDataURL('image/png');
+  } catch(e) { /* canvas not available */ }
+}
+
 async function main() {
+  generateAppIcon();
   await stravaHandleCallback();
   render();
   const st = state.config.strava;
