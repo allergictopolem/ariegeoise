@@ -482,10 +482,19 @@
   }
 
   /* DAY COL INTERACTIVE */
-  .day-col { position: relative; cursor: pointer; }
-  .day-col:hover .day-pill { filter: brightness(0.95); }
-  .day-col.dragging { opacity: 0.3; }
-  .day-col.drag-over .day-pill { outline: 2px dashed var(--accent2); outline-offset: 1px; }
+  .day-col { position: relative; }
+  .session-wrap { position: relative; cursor: pointer; }
+  .session-wrap:hover .day-pill { filter: brightness(0.95); }
+  .session-wrap.dragging { opacity: 0.3; }
+  .day-col.drag-over { outline: 2px dashed var(--accent2); outline-offset: -2px; border-radius: 4px; }
+  .day-add-btn {
+    width: 100%; margin-top: 3px; padding: 3px 0;
+    border: 1px dashed var(--border); border-radius: 3px;
+    background: none; cursor: pointer; font-size: 13px;
+    color: var(--ink3); opacity: 0; transition: opacity 0.15s;
+    display: block;
+  }
+  .day-col:hover .day-add-btn { opacity: 1; }
 
   /* DONE PILL */
   .day-pill.done { opacity: 0.45; }
@@ -1458,8 +1467,11 @@
       <div id="m-strava-recap" style="display:none;margin-top:10px;padding:10px 12px;background:rgba(252,76,2,0.05);border:1px solid rgba(252,76,2,0.18);border-radius:5px;font-family:var(--font-mono);font-size:10px;color:var(--ink2);line-height:1.8"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveSession()">Enregistrer</button>
+      <button id="m-delete-btn" class="btn" style="color:var(--accent);display:none" onclick="removeSessionFromModal()">Supprimer</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal()">Annuler</button>
+        <button class="btn btn-primary" onclick="saveSession()">Enregistrer</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1653,7 +1665,9 @@ function formatDur(min) {
   const m = min % 60;
   return m ? `${h}h${String(m).padStart(2,'0')}` : `${h}h`;
 }
-function sumDurDays(days) { return days.reduce((a,d) => a + (d.dur||0), 0); }
+function sumDurDays(days) {
+  return days.reduce((a,d) => a + (d.sessions||[]).reduce((sa,s) => sa + (s.dur||0), 0), 0);
+}
 
 function calcLoad(dur, zone) {
   const h = dur/60, total = Math.round(h*(LOAD_FACTORS[zone]||0));
@@ -1665,7 +1679,13 @@ function calcLoad(dur, zone) {
   };
 }
 function sumLoad(days) {
-  return days.reduce((a,d)=>{const l=calcLoad(d.dur,d.z);return{base:a.base+l.base,threshold:a.threshold+l.threshold,high:a.high+l.high,total:a.total+l.total};},{base:0,threshold:0,high:0,total:0});
+  return days.reduce((acc,d) => {
+    (d.sessions||[]).forEach(s => {
+      const l = calcLoad(s.dur,s.z);
+      acc.base+=l.base; acc.threshold+=l.threshold; acc.high+=l.high; acc.total+=l.total;
+    });
+    return acc;
+  }, {base:0,threshold:0,high:0,total:0});
 }
 function sessionColor(type, zone) {
   if (type==='Événement') return {c:"#5B4BA8",b:"rgba(91,75,168,0.12)"};
@@ -1689,7 +1709,7 @@ function makeDefaultWeeks() {
     weeks.push({
       num: i+1, label:`S${i+1}`, dates: formatWeekDates(monISO, sunISO),
       phase:'Base', pc:'#1D5FA8', pb:'rgba(29,95,168,0.1)', note:'',
-      days: ['Lu','Ma','Me','Je','Ve','Sa','Di'].map(n => ({n, l:'Repos', t:'Repos', dur:0, z:'Repos', c:'#7A7670', b:'rgba(122,118,112,0.1)', done:false, desc:''}))
+      days: ['Lu','Ma','Me','Je','Ve','Sa','Di'].map(n => ({n, sessions:[]}))
     });
   }
   return weeks;
@@ -1714,9 +1734,19 @@ function initState() {
     if (s) {
       const p = JSON.parse(s);
       p.weeks.forEach(w => {
-        w.days.forEach(d => {
-          if (d.done===undefined) d.done=false;
-          if (d.desc===undefined) d.desc='';
+        w.days = w.days.map(d => {
+          if (Array.isArray(d.sessions)) {
+            d.sessions.forEach(s => {
+              if (s.done===undefined) s.done=false;
+              if (s.desc===undefined) s.desc='';
+              if (s.strava===undefined) s.strava=null;
+            });
+            return d;
+          }
+          // Migrate flat day → sessions array
+          const isRest = !d.l || d.t==='Repos';
+          if (isRest) return {n:d.n||d, sessions:[]};
+          return {n:d.n, sessions:[{l:d.l,t:d.t,dur:d.dur||0,z:d.z,c:d.c,b:d.b,done:d.done||false,desc:d.desc||'',strava:d.strava||null}]};
         });
       });
       if (!p.config)                   p.config = makeDefaultConfig();
@@ -1735,30 +1765,33 @@ function saveState() { localStorage.setItem('ariegeoise-v2', JSON.stringify(stat
 
 // ── DRAG & DROP ────────────────────────────────────────────────────────────
 let dragSrc = null;
-function onDragStart(e, wi, di) {
-  dragSrc = {type:'week', wi, di};
+function onDragStart(e, wi, di, si) {
+  dragSrc = {type:'session', wi, di, si};
   e.dataTransfer.effectAllowed = 'move';
   setTimeout(() => e.currentTarget.classList.add('dragging'), 0);
 }
 function onDragEnd(e)    { e.currentTarget.classList.remove('dragging'); }
 function onDragOver(e)   { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
 function onDragLeave(e)  { e.currentTarget.classList.remove('drag-over'); }
-function onDrop(e, wi, di) {
+function onDropSession(e, wi, di) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
   if (!dragSrc) return;
+  const targetDay = state.weeks[wi].days[di];
   if (dragSrc.type === 'lib') {
+    if (targetDay.sessions.length >= 3) { dragSrc=null; return; }
     const s = dragSrc.session;
-    const d = state.weeks[wi].days[di];
-    d.l=s.l; d.t=s.t; d.dur=s.dur; d.z=s.z; d.c=s.c; d.b=s.b;
-    dragSrc = null; saveState(); render(); return;
+    targetDay.sessions.push({l:s.l,t:s.t,dur:s.dur,z:s.z,c:s.c,b:s.b,done:false,desc:'',strava:null});
+    dragSrc=null; saveState(); render(); return;
   }
-  if (dragSrc.wi===wi && dragSrc.di===di) { dragSrc=null; return; }
-  const s = state.weeks[dragSrc.wi].days[dragSrc.di];
-  const d = state.weeks[wi].days[di];
-  ['l','t','dur','z','c','b','done'].forEach(f => { [s[f],d[f]]=[d[f],s[f]]; });
-  dragSrc = null;
-  saveState(); render();
+  if (dragSrc.type === 'session') {
+    if (dragSrc.wi===wi && dragSrc.di===di) { dragSrc=null; return; }
+    if (targetDay.sessions.length >= 3) { dragSrc=null; return; }
+    const srcDay = state.weeks[dragSrc.wi].days[dragSrc.di];
+    const [sess] = srcDay.sessions.splice(dragSrc.si, 1);
+    targetDay.sessions.push(sess);
+    dragSrc=null; saveState(); render();
+  }
 }
 function onPanelDragStart(e, idx) {
   const s = _panelLib[idx];
@@ -1770,9 +1803,9 @@ function onPanelDragStart(e, idx) {
 function onPanelDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
 
 // ── DONE TOGGLE ────────────────────────────────────────────────────────────
-function toggleDone(e, wi, di) {
+function toggleSessionDone(e, wi, di, si) {
   e.stopPropagation();
-  state.weeks[wi].days[di].done = !state.weeks[wi].days[di].done;
+  state.weeks[wi].days[di].sessions[si].done = !state.weeks[wi].days[di].sessions[si].done;
   saveState(); render();
 }
 
@@ -1804,20 +1837,22 @@ function buildStravaRecap(act) {
   return rows.join('<br>');
 }
 
-function openModal(wi, di) {
-  editTarget = {wi, di};
-  const d = state.weeks[wi].days[di];
-  document.getElementById('m-name').value = d.l;
-  document.getElementById('m-type').value = d.t;
-  document.getElementById('m-zone').value = d.z;
-  document.getElementById('m-dur').value  = d.dur;
-  document.getElementById('m-desc').value = d.desc||'';
+function openModal(wi, di, si) {
+  editTarget = {wi, di, si: si ?? -1};
+  const s = (si >= 0) ? state.weeks[wi].days[di].sessions[si] : null;
+  document.getElementById('m-name').value = s?.l || '';
+  document.getElementById('m-type').value = s?.t || 'Footing';
+  document.getElementById('m-zone').value = s?.z || 'Z2';
+  document.getElementById('m-dur').value  = s?.dur ?? 60;
+  document.getElementById('m-desc').value = s?.desc || '';
   const recap = document.getElementById('m-strava-recap');
   if (recap) {
-    const act = d.strava?.act;
+    const act = s?.strava?.act;
     recap.style.display = act ? 'block' : 'none';
     recap.innerHTML = act ? buildStravaRecap(act) : '';
   }
+  const delBtn = document.getElementById('m-delete-btn');
+  if (delBtn) delBtn.style.display = (si >= 0) ? 'inline-block' : 'none';
   document.getElementById('modal').style.display = 'flex';
   onZoneChange();
 }
@@ -1827,16 +1862,38 @@ function closeModal() {
 }
 function saveSession() {
   if (!editTarget) return;
-  const {wi, di} = editTarget;
-  const d = state.weeks[wi].days[di];
+  const {wi, di, si} = editTarget;
   const type = document.getElementById('m-type').value;
   const zone = document.getElementById('m-zone').value;
   const col  = sessionColor(type, zone);
-  d.l   = document.getElementById('m-name').value.trim() || d.l;
-  d.t   = type; d.z = zone; d.dur = parseInt(document.getElementById('m-dur').value)||0;
-  d.c   = col.c; d.b = col.b;
-  d.desc = document.getElementById('m-desc').value.trim();
+  const data = {
+    l:    document.getElementById('m-name').value.trim() || type,
+    t:type, z:zone, dur:parseInt(document.getElementById('m-dur').value)||0,
+    c:col.c, b:col.b,
+    desc: document.getElementById('m-desc').value.trim(),
+    done: false, strava: null
+  };
+  const day = state.weeks[wi].days[di];
+  if (si >= 0) {
+    data.done   = day.sessions[si].done;
+    data.strava = day.sessions[si].strava;
+    day.sessions[si] = data;
+  } else {
+    day.sessions.push(data);
+  }
   saveState(); closeModal(); render();
+}
+
+function addSession(wi, di) {
+  if (state.weeks[wi].days[di].sessions.length >= 3) return;
+  openModal(wi, di, -1);
+}
+function removeSessionFromModal() {
+  if (!editTarget || editTarget.si < 0) return;
+  if (!confirm('Supprimer cette séance ?')) return;
+  const {wi, di, si} = editTarget;
+  state.weeks[wi].days[di].sessions.splice(si, 1);
+  closeModal(); saveState(); render();
 }
 
 // ── RESET ──────────────────────────────────────────────────────────────────
@@ -1904,9 +1961,11 @@ function renderGlobalStats() {
   if (!el) return;
   let totalMin = 0, doneMin = 0, doneCount = 0, totalCount = 0;
   state.weeks.forEach(w => w.days.forEach(d => {
-    totalMin += d.dur||0;
-    if (d.dur > 0) totalCount++;
-    if (d.done) { doneMin += d.dur||0; if (d.dur > 0) doneCount++; }
+    (d.sessions||[]).forEach(s => {
+      totalMin += s.dur||0;
+      if (s.dur>0) totalCount++;
+      if (s.done) { doneMin += s.dur||0; if (s.dur>0) doneCount++; }
+    });
   }));
   const pct = totalMin > 0 ? Math.round(doneMin / totalMin * 100) : 0;
   el.innerHTML = `<div class="global-stat-bar">
@@ -1960,7 +2019,7 @@ function renderWeeks() {
   }
   state.weeks.forEach((w, wi) => {
     const pl = sumLoad(w.days);
-    const dn = sumLoad(w.days.filter(d => d.done));
+    const dn = (()=>{ const acc={base:0,threshold:0,high:0,total:0}; w.days.forEach(d=>(d.sessions||[]).forEach(s=>{if(s.done){const l=calcLoad(s.dur,s.z);acc.base+=l.base;acc.threshold+=l.threshold;acc.high+=l.high;acc.total+=l.total;}})); return acc; })();
     const t  = pl.total||1;
     const bPct = Math.round(pl.base/t*100);
     const tPct = Math.round(pl.threshold/t*100);
@@ -1971,51 +2030,49 @@ function renderWeeks() {
     const _isCap = state.config.event?.sport === 'cap';
     const _weekStart = state.config.startDate ? new Date(state.config.startDate + 'T12:00:00') : null;
     if (_weekStart) _weekStart.setDate(_weekStart.getDate() + wi * 7);
-    const daysHtml = w.days.map((d, di) => {
+    const daysHtml = w.days.map((day, di) => {
       let dayNum = '';
       if (_weekStart) {
         const dd = new Date(_weekStart); dd.setDate(dd.getDate() + di);
         dayNum = dd.getDate();
       }
-      const tl = (d.t!=='Repos'&&d.t!=='Voyage') ? `<span class="day-type">${d.t}</span>` : '';
-      const pace = (_isCap && _racePace > 0 && d.z !== 'Repos') ? getPaceLabel(d.z, _racePace) : null;
-      const paceHtml = pace ? `<span class="day-pace">${pace}</span>` : '';
-      const nutri = getNutriHint(d.z, d.dur);
-      const nutriHtml = nutri ? `<span class="day-nutri">${nutri}</span>` : '';
-      // Strava
-      const sv = d.strava;
-      const diffClass = sv?.case === 'D' ? ' strava-diff' : '';
-      let gaugeHtml = '';
-      if (sv?.case === 'A' && d.dur > 0) {
-        const actualMin = Math.round((sv.act.moving_time||0) / 60);
-        const pct = Math.min(200, Math.round(actualMin / d.dur * 100));
-        const over = pct > 100;
-        gaugeHtml = `<div class="day-gauge-track"><div class="day-gauge-fill${over?' over':''}" style="width:${Math.min(100,pct)}%"></div></div>`;
-      }
-      let secondaryPill = '';
-      if (sv?.case === 'B' || sv?.case === 'C') {
-        const act = sv.act;
-        const short = stravaShortStats(act);
-        secondaryPill = `<div class="strava-pill" title="${stravaStats(act)}">🟠 ${short}</div>`;
-      }
-      if (sv?.case === 'D') {
-        const short = stravaShortStats(sv.act);
-        secondaryPill = `<div class="strava-pill" title="${stravaStats(sv.act)}">⚡ ${short}</div>`;
-      }
-      const pillTitle = sv ? stravaStats(sv.act) : (d.desc||'');
-      return `<div class="day-col" draggable="true"
-          ondragstart="onDragStart(event,${wi},${di})" ondragend="onDragEnd(event)"
+      const sessions = day.sessions || [];
+      const sessionsHtml = sessions.map((s, si) => {
+        const tl = (s.t!=='Repos'&&s.t!=='Voyage') ? `<span class="day-type">${s.t}</span>` : '';
+        const pace = (_isCap && _racePace > 0 && s.z !== 'Repos') ? getPaceLabel(s.z, _racePace) : null;
+        const paceHtml = pace ? `<span class="day-pace">${pace}</span>` : '';
+        const nutri = getNutriHint(s.z, s.dur);
+        const nutriHtml = nutri ? `<span class="day-nutri">${nutri}</span>` : '';
+        const sv = s.strava;
+        const diffClass = sv?.case==='D' ? ' strava-diff' : '';
+        let gaugeHtml = '';
+        if (sv?.case==='A' && s.dur>0) {
+          const actualMin=Math.round((sv.act.moving_time||0)/60);
+          const pct=Math.min(200,Math.round(actualMin/s.dur*100));
+          gaugeHtml=`<div class="day-gauge-track"><div class="day-gauge-fill${pct>100?' over':''}" style="width:${Math.min(100,pct)}%"></div></div>`;
+        }
+        let stravaExtra='';
+        if (sv?.case==='B'||sv?.case==='C') { const sh=stravaShortStats(sv.act); stravaExtra=`<div class="strava-pill" title="${stravaStats(sv.act)}">🟠 ${sh}</div>`; }
+        if (sv?.case==='D') { const sh=stravaShortStats(sv.act); stravaExtra=`<div class="strava-pill" title="${stravaStats(sv.act)}">⚡ ${sh}</div>`; }
+        const pillTitle = sv ? stravaStats(sv.act) : (s.desc||'');
+        return `<div class="session-wrap" draggable="true"
+            ondragstart="onDragStart(event,${wi},${di},${si})" ondragend="onDragEnd(event)">
+          <div class="day-pill ${s.done?'done':''}${diffClass}" style="color:${s.c};background:${s.b}"
+               title="${pillTitle}" onclick="openModal(${wi},${di},${si})">
+            <span class="day-pill-name">${s.l}</span>${tl}${paceHtml}${nutriHtml}${gaugeHtml}
+          </div>
+          <button class="done-btn ${s.done?'checked':''}" onclick="toggleSessionDone(event,${wi},${di},${si})">✓</button>
+          ${stravaExtra}
+        </div>`;
+      }).join('');
+      const isRest = sessions.length===0;
+      const restHtml = isRest ? `<div class="day-pill" style="color:#9A9590;background:rgba(122,118,112,0.06);cursor:pointer" onclick="addSession(${wi},${di})"><span class="day-pill-name" style="opacity:0.45">Repos</span></div>` : '';
+      const addBtn = sessions.length<3 ? `<button class="day-add-btn" onclick="addSession(${wi},${di})">+</button>` : '';
+      return `<div class="day-col"
           ondragover="onDragOver(event)" ondragleave="onDragLeave(event)"
-          ondrop="onDrop(event,${wi},${di})">
-        <div class="day-name">${d.n}${dayNum ? `<span class="day-num">${dayNum}</span>` : ''}</div>
-        <div class="day-pill ${d.done?'done':''}${diffClass}" style="color:${d.c};background:${d.b}"
-             title="${pillTitle}"
-             onclick="openModal(${wi},${di})">
-          <span class="day-pill-name">${d.l}</span>${tl}${paceHtml}${nutriHtml}${gaugeHtml}
-        </div>
-        <button class="done-btn ${d.done?'checked':''}"
-                onclick="toggleDone(event,${wi},${di})">✓</button>
-        ${secondaryPill}
+          ondrop="onDropSession(event,${wi},${di})">
+        <div class="day-name">${day.n}${dayNum?`<span class="day-num">${dayNum}</span>`:''}</div>
+        ${restHtml}${sessionsHtml}${addBtn}
       </div>`;
     }).join('');
 
@@ -2056,7 +2113,7 @@ function renderChart() {
   const data = state.weeks.map(w => ({
     label: w.label, pc: w.pc,
     planned: sumLoad(w.days),
-    done:    sumLoad(w.days.filter(d => d.done)),
+    done:    (()=>{ const acc={base:0,threshold:0,high:0,total:0}; w.days.forEach(d=>(d.sessions||[]).forEach(s=>{if(s.done){const l=calcLoad(s.dur,s.z);acc.base+=l.base;acc.threshold+=l.threshold;acc.high+=l.high;acc.total+=l.total;}})); return acc; })(),
   }));
   const maxLoad = Math.max(...data.map(d => d.planned.total), 1);
   data.forEach(d => {
@@ -2085,11 +2142,13 @@ function renderAdaptations() {
   let pl={base:0,threshold:0,high:0,total:0}, dn={base:0,threshold:0,high:0,total:0};
   let doneCount=0, totalCount=0, kjTotal=0, syncCount=0;
   state.weeks.forEach(w => w.days.forEach(d => {
-    const l = calcLoad(d.dur, d.z);
-    pl.base+=l.base; pl.threshold+=l.threshold; pl.high+=l.high; pl.total+=l.total;
-    if (d.dur>0) totalCount++;
-    if (d.done) { dn.base+=l.base; dn.threshold+=l.threshold; dn.high+=l.high; dn.total+=l.total; if(d.dur>0) doneCount++; }
-    if (d.strava?.act?.kilojoules) { kjTotal += d.strava.act.kilojoules; syncCount++; }
+    (d.sessions||[]).forEach(s => {
+      const l=calcLoad(s.dur,s.z);
+      pl.base+=l.base; pl.threshold+=l.threshold; pl.high+=l.high; pl.total+=l.total;
+      if (s.dur>0) totalCount++;
+      if (s.done) { dn.base+=l.base; dn.threshold+=l.threshold; dn.high+=l.high; dn.total+=l.total; if(s.dur>0) doneCount++; }
+      if (s.strava?.act?.kilojoules) { kjTotal+=s.strava.act.kilojoules; syncCount++; }
+    });
   }));
   const pct = (a,b) => b>0 ? Math.min(100,Math.round(a/b*100)) : 0;
   const isCycling = (state.config.event?.sport || 'velo') === 'velo';
@@ -2569,14 +2628,15 @@ function buildSmartWeek(sport, ev, weekIdx, totalWeeks, availDays, targetMin, mo
   const dp = isDecharge ? DECHARGE_PHASE : phase;
   const dayNames = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
   const availIndices = availDays.map((v,i) => v ? i : -1).filter(i => i >= 0);
-  const mkRest = n => { const col = sessionColor('Repos','Repos'); return {n,l:'Repos',t:'Repos',dur:0,z:'Repos',c:col.c,b:col.b,done:false,desc:''}; };
+  const mkRest = n => ({n, sessions:[]});
+  const mkSess = (n, s) => { const col=sessionColor(s.t,s.z); return {n, sessions:[{l:s.l,t:s.t,dur:s.dur||0,z:s.z,c:col.c,b:col.b,done:false,desc:s.desc||'',strava:null}]}; };
 
   // Race week: two short activations only
   if (phase.name === 'Race week 🏁') {
     const a1 = findClosestAvail(1, availIndices, []);
     const a2 = findClosestAvail(3, availIndices, a1!==null?[a1]:[]);
     const days = dayNames.map((n,i) => {
-      if (i===a1||i===a2) { const col=sessionColor('Activation','Z1'); return {n,l:'Activation Z1',t:'Activation',dur:30,z:'Z1',c:col.c,b:col.b,done:false,desc:''}; }
+      if (i===a1||i===a2) { const col=sessionColor('Activation','Z1'); return {n,sessions:[{l:'Activation Z1',t:'Activation',dur:30,z:'Z1',c:col.c,b:col.b,done:false,desc:'',strava:null}]}; }
       return mkRest(n);
     });
     return {num:weekIdx+1,label:`S${weekIdx+1}`,dates:formatWeekDates(monISO,sunISO),phase:dp.name,pc:dp.c,pb:dp.b,note:'',days};
@@ -2602,14 +2662,21 @@ function buildSmartWeek(sport, ev, weekIdx, totalWeeks, availDays, targetMin, mo
 
   const days = dayNames.map((n,i) => {
     if (!availDays[i]) return mkRest(n);
-    let s;
-    if (i===hiDay)          s = {...kit.hi,  dur:hiDur};
-    else if (i===hi2Day)    s = {...kit.hi2, dur:hiDur};
-    else if (i===longDay)   s = {...kit.long, dur:longDur};
-    else if (efIdx.includes(i)) s = {...kit.ef, dur:efDur};
-    else return mkRest(n);
-    const col = sessionColor(s.t, s.z);
-    return {n,l:s.l,t:s.t,dur:s.dur||0,z:s.z,c:col.c,b:col.b,done:false,desc:''};
+    if (i===hiDay)  return mkSess(n, {...kit.hi,  dur:hiDur});
+    if (i===hi2Day) return mkSess(n, {...kit.hi2, dur:hiDur});
+    if (i===longDay) {
+      if (sport==='tri') {
+        const vDur=Math.round(longDur*0.65/15)*15, rDur=Math.round(longDur*0.35/15)*15;
+        const colV=sessionColor('Endurance','Mixed'), colR=sessionColor('Footing','Z2');
+        return {n, sessions:[
+          {l:'Vélo long Z2',t:'Endurance',dur:vDur,z:'Mixed',c:colV.c,b:colV.b,done:false,desc:'',strava:null},
+          {l:'CAP post-vélo',t:'Footing',  dur:rDur,z:'Z2',   c:colR.c,b:colR.b,done:false,desc:'',strava:null},
+        ]};
+      }
+      return mkSess(n, {...kit.long, dur:longDur});
+    }
+    if (efIdx.includes(i)) return mkSess(n, {...kit.ef, dur:efDur});
+    return mkRest(n);
   });
   return {num:weekIdx+1,label:`S${weekIdx+1}`,dates:formatWeekDates(monISO,sunISO),phase:dp.name,pc:dp.c,pb:dp.b,note:'',days};
 }
@@ -2657,12 +2724,13 @@ function generateTemplatePlan(sport, constraints, startISO, endISO) {
     weeks.forEach((w, idx) => { if (w.phase === 'Spécifique') lastSpecIdx = idx; });
     if (lastSpecIdx >= 0) {
       const tw = weeks[lastSpecIdx];
-      const longDayIdx = tw.days.findIndex(d => d.t === 'Sortie longue');
+      const longDayIdx = tw.days.findIndex(d => (d.sessions||[]).some(s => s.t === 'Sortie longue'));
       if (longDayIdx >= 0) {
-        const day = tw.days[longDayIdx];
-        day.l = testSess.l; day.t = testSess.t; day.z = testSess.z;
-        day.dur = testSess.dur; day.desc = testSess.desc;
-        day.c = testSess.c; day.b = testSess.b;
+        const sessIdx = tw.days[longDayIdx].sessions.findIndex(s => s.t === 'Sortie longue');
+        if (sessIdx >= 0) {
+          const col = sessionColor('Test','Z4');
+          tw.days[longDayIdx].sessions[sessIdx] = {l:testSess.l,t:testSess.t,z:testSess.z,dur:testSess.dur,desc:testSess.desc,c:col.c,b:col.b,done:false,strava:null};
+        }
       }
     }
   }
@@ -2697,7 +2765,7 @@ function selectPhase(wi, idx) {
   state.weeks[wi].pb = p.b;
   closePhaseDropdown();
   saveState(); render();
-  const hasActivity = state.weeks[wi].days.some(d => d.t !== 'Repos' && d.dur > 0);
+  const hasActivity = state.weeks[wi].days.some(d => (d.sessions||[]).some(s => s.t !== 'Repos' && s.dur > 0));
   if (hasActivity && state.config.event?.sport && prevPhase !== p.name) {
     _pendingPhaseRebuild = wi;
     const bar = document.getElementById('phase-rebuild-bar');
@@ -2723,9 +2791,9 @@ function confirmPhaseRebuild() {
     if (d) raceTimeMin = Math.round(d * ev.racePace / 60);
   }
   const weekIdx = state.weeks.indexOf(w);
-  const doneStates = w.days.map(d => d.done);
+  const doneStates = w.days.map(d => (d.sessions||[]).map(s => s.done));
   const rebuilt = buildSmartWeek(sport, ev, weekIdx, state.weeks.length, constraints.days, targetMin, '', '', raceTimeMin);
-  w.days = rebuilt.days.map((d, i) => ({...d, done: doneStates[i] || false}));
+  w.days = rebuilt.days.map((d, i) => ({n:d.n, sessions:d.sessions.map((s,si) => ({...s, done: doneStates[i]?.[si] || false}))}));
   hidePhaseRebuildBar();
   saveState(); render();
 }
@@ -2796,8 +2864,8 @@ function regenerateWeeks(startISO, endISO) {
     } else {
       const prev = newWeeks[i - 1] || existing[existing.length - 1];
       const days = prev
-        ? prev.days.map(d => ({...d, done:false, desc:''}))
-        : ['Lu','Ma','Me','Je','Ve','Sa','Di'].map(n => ({n,l:'Repos',t:'Repos',dur:0,z:'Repos',c:'#7A7670',b:'rgba(122,118,112,0.1)',done:false,desc:''}));
+        ? prev.days.map(d => ({n:d.n, sessions:(d.sessions||[]).map(s => ({...s, done:false}))}))
+        : ['Lu','Ma','Me','Je','Ve','Sa','Di'].map(n => ({n, sessions:[]}));
       newWeeks.push({num, label, dates, phase:prev?.phase||'Base', pc:prev?.pc||'#1D5FA8', pb:prev?.pb||'rgba(29,95,168,0.1)', note:'', days});
     }
     i++; cur.setDate(cur.getDate() + 7);
@@ -2835,7 +2903,7 @@ function addWeekWithPhase(phaseIdx) {
   state.weeks.push({
     num, label:`S${num}`, dates: formatWeekDates(monISO, sunISO),
     phase: phase.name, pc: phase.c, pb: phase.b, note:'',
-    days: last.days.map(d => ({...d, done:false, desc:''}))
+    days: last.days.map(d => ({n:d.n, sessions:(d.sessions||[]).map(s => ({...s, done:false}))}))
   });
   saveState(); render();
 }
@@ -2922,7 +2990,7 @@ async function stravaSync() {
     if (!resp.ok) throw new Error('API error: ' + resp.status);
     const activities = await resp.json();
     // Clear previous strava data
-    state.weeks.forEach(w => w.days.forEach(d => { delete d.strava; }));
+    state.weeks.forEach(w => w.days.forEach(d => { (d.sessions||[]).forEach(s => { s.strava=null; }); }));
     const sport = state.config.event?.sport || 'velo';
     // Sort by start_date ascending so earlier activity is "main"
     activities.sort((a,b) => a.start_date < b.start_date ? -1 : 1);
@@ -2932,23 +3000,26 @@ async function stravaSync() {
       if (!match) return;
       const {wi, di} = match;
       const d = state.weeks[wi].days[di];
-      const isPlanned = d.t !== 'Repos' && d.dur > 0;
-      const matchesSport = stravaTypeMatchesSport(act.type, sport);
+      const sessions = d.sessions || [];
+      const isPlanned = sessions.some(s => s.t !== 'Repos' && s.dur > 0);
+      const matchesSport = stravaTypeMatchesSport(act.sport_type||act.type, sport);
+      // Find best matching session (by sport type, first without strava data)
+      const matchIdx = sessions.findIndex(s => s.t !== 'Repos' && !s.strava && stravaTypeMatchesSport(act.sport_type||act.type, sport));
       if (!isPlanned) {
         // Case B: rest day + any activity
-        if (!d.strava) d.strava = {case:'B', act};
+        if (sessions.length > 0 && !sessions[0].strava) sessions[0].strava = {case:'B', act};
+      } else if (matchIdx >= 0) {
+        // Case A: matching session found
+        sessions[matchIdx].strava = {case:'A', act};
+        sessions[matchIdx].done = true;
       } else if (matchesSport) {
-        if (!d.strava) {
-          // Case A: first matching activity
-          d.strava = {case:'A', act};
-          d.done = true;
-        } else {
-          // Case C: extra activity same day, same sport
-          d.strava = {case:'C', act:d.strava.act, extra:act};
-        }
+        // Case C: extra activity, all matching sessions already have strava
+        const lastMatch = [...sessions].reverse().find(s => s.t !== 'Repos');
+        if (lastMatch) lastMatch.strava = {case:'C', act};
       } else {
-        // Case D: different sport
-        if (!d.strava) d.strava = {case:'D', act};
+        // Case D: wrong sport type
+        const first = sessions.find(s => !s.strava);
+        if (first) first.strava = {case:'D', act};
       }
     });
     state.config.strava.lastSync = Date.now();
@@ -2996,7 +3067,7 @@ function stravaConnect() {
 
 function stravaDisconnect() {
   state.config.strava = { clientId: state.config.strava.clientId, clientSecret: state.config.strava.clientSecret, refreshToken:'', accessToken:'', tokenExpiry:0, lastSync:0 };
-  state.weeks.forEach(w => w.days.forEach(d => { delete d.strava; }));
+  state.weeks.forEach(w => w.days.forEach(d => { (d.sessions||[]).forEach(s => { s.strava=null; }); }));
   saveState(); render(); closeStravaModal();
 }
 
@@ -3075,7 +3146,7 @@ function getUI() { try { return JSON.parse(localStorage.getItem(_UI_KEY))||{}; }
 function setUI(p) { localStorage.setItem(_UI_KEY, JSON.stringify({...getUI(),...p})); }
 function hasPlan() {
   if (getUI().hasPlan) return true;
-  const hasReal = state.weeks.some(w => w.days.some(d => d.t !== 'Repos'));
+  const hasReal = state.weeks.some(w => w.days.some(d => (d.sessions||[]).some(s => s.t !== 'Repos' && s.dur > 0)));
   if (hasReal) { setUI({ hasPlan: true }); return true; }
   return false;
 }
