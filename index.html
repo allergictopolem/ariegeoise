@@ -2093,13 +2093,11 @@ function renderAdaptations() {
   }));
   const pct = (a,b) => b>0 ? Math.min(100,Math.round(a/b*100)) : 0;
   const isCycling = (state.config.event?.sport || 'velo') === 'velo';
-  const kjPct = doneCount > 0 ? pct(syncCount, doneCount) : 0;
   const kjCard = `<div class="adapt-card" style="grid-column:1/-1">
     <div class="adapt-label">🟠 Énergie Strava${isCycling ? ' (kilojoules)' : ''}</div>
-    <div class="adapt-bar-wrap"><div class="adapt-bar-fill" style="width:${kjPct}%;background:#FC4C02;opacity:0.75"></div></div>
-    <div class="adapt-vals">
-      <span>${syncCount} séance${syncCount!==1?'s':''} sync · ${isCycling && kjTotal>0 ? `<strong>${Math.round(kjTotal).toLocaleString('fr-FR')} kJ</strong>` : '—'}</span>
-      <span class="adapt-pct">${kjPct}%</span>
+    <div class="adapt-vals" style="margin-top:4px">
+      <span>${syncCount} séance${syncCount!==1?'s':''} synchronisée${syncCount!==1?'s':''}</span>
+      <span class="adapt-pct">${isCycling && kjTotal>0 ? `<strong>${Math.round(kjTotal).toLocaleString('fr-FR')} kJ</strong>` : '—'}</span>
     </div>
   </div>`;
   el.innerHTML = `<div class="adapt-grid">
