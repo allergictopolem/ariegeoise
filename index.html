@@ -923,7 +923,10 @@
   @media (max-width: 600px) {
 .masthead { padding: 1.5rem 0 1.4rem; }
     .masthead, .main { padding-left: 1rem; padding-right: 1rem; }
-    .masthead-inner { padding-left: 1rem; padding-right: 1rem; }
+    .masthead-inner { padding-left: 0.75rem; padding-right: 0.75rem; }
+    /* Legend + pace zones: break out of .main padding to go edge-to-edge */
+    .legend { margin-left: -1rem; margin-right: -1rem; padding-left: 1rem; padding-right: 1rem; }
+    #pace-zones-bar { margin-left: -1rem; margin-right: -1rem; padding-left: 1rem; padding-right: 1rem; }
     .masthead-wm { display: none; }
     .masthead-sub { display: none; }
     .masthead-stats { gap: 0.6rem; flex-wrap: wrap; }
@@ -1076,6 +1079,7 @@
     display: flex; gap: 6px;
     overflow-x: auto; -webkit-overflow-scrolling: touch;
     scrollbar-width: none; padding-bottom: 4px;
+    min-width: 0; width: 100%;
   }
   .msp-strip::-webkit-scrollbar { display: none; }
   .msp-chip {
