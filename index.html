@@ -1672,6 +1672,39 @@ const SESSION_LIBRARY = {
   ],
 };
 
+const INTERVAL_POOLS = {
+  marathon: {  // même pool pour semi
+    debut: [
+      {reps:2, distKm:4,   recov:{km:1},   zone:'Z3'},
+      {reps:3, distKm:3,   recov:{km:1},   zone:'Z3'},
+      {reps:4, distKm:2,   recov:{km:1},   zone:'Z4'},
+      {reps:5, distKm:1,   recov:{sec:90}, zone:'Z4'},
+    ],
+    solide: [
+      {reps:3, distKm:4,   recov:{km:1},   zone:'Z3'},
+      {reps:4, distKm:3,   recov:{km:1},   zone:'Z3'},
+      {reps:5, distKm:2,   recov:{km:1},   zone:'Z4'},
+      {reps:6, distKm:1,   recov:{sec:90}, zone:'Z4'},
+    ],
+  },
+  k10: {  // même pool pour k5
+    debut: [
+      {reps:3,  distKm:3,   recov:{km:1},   zone:'Z3'},
+      {reps:4,  distKm:2,   recov:{km:1},   zone:'Z4'},
+      {reps:5,  distKm:1,   recov:{sec:90}, zone:'Z4'},
+      {reps:6,  distKm:0.8, recov:{sec:90}, zone:'Z4'},
+      {reps:10, distKm:0.4, recov:{sec:75}, zone:'Z4'},
+    ],
+    solide: [
+      {reps:4,  distKm:3,   recov:{km:1},   zone:'Z3'},
+      {reps:5,  distKm:2,   recov:{km:1},   zone:'Z4'},
+      {reps:6,  distKm:1,   recov:{sec:90}, zone:'Z4'},
+      {reps:8,  distKm:0.8, recov:{sec:90}, zone:'Z4'},
+      {reps:12, distKm:0.4, recov:{sec:75}, zone:'Z4'},
+    ],
+  },
+};
+
 const DEFAULT_PHASE_TABLE = [
   {phase:'Pyrénées (S1–S2)',    z12:'65%', z3:'25%', z4:'10%', vol:'15–18 h', obj:'D+ max, adaptation montagne'},
   {phase:'Transition (S3–S4)',  z12:'70%', z3:'20%', z4:'10%', vol:'10–12 h', obj:'Maintien via home trainer'},
@@ -2781,6 +2814,52 @@ function findClosestAvail(preferred, availIndices, exclude) {
   return cands.reduce((best, i) => Math.abs(i-preferred) < Math.abs(best-preferred) ? i : best);
 }
 
+function getPhaseWeekIdx(weekIdx, totalWeeks) {
+  const curPhase = getPhaseForWeek(weekIdx, totalWeeks);
+  let count = 0;
+  for (let i = weekIdx - 1; i >= 0; i--) {
+    if (getPhaseForWeek(i, totalWeeks).name === curPhase.name) count++;
+    else break;
+  }
+  return count;
+}
+
+function calcIntervalDur(workout, racePaceSec) {
+  const pace = racePaceSec > 0 ? racePaceSec : 300;
+  const ratios = PACE_RATIOS[workout.zone] || PACE_RATIOS.Z4;
+  const midVel = (ratios[0] + ratios[1]) / 2;
+  const repPaceSec = pace / midVel;
+  let totalSec = 25 * 60; // 15min échauffement + 10min retour calme
+  totalSec += workout.reps * workout.distKm * repPaceSec;
+  const recovCount = workout.reps - 1;
+  if (workout.recov.km) {
+    const efVel = (PACE_RATIOS.Z2[0] + PACE_RATIOS.Z2[1]) / 2;
+    totalSec += recovCount * workout.recov.km * (pace / efVel);
+  } else {
+    totalSec += recovCount * (workout.recov.sec || 90);
+  }
+  return Math.round(totalSec / 60);
+}
+
+function buildIntervalSession(format, phaseName, weekIdxInPhase, racePaceSec) {
+  const poolKey = ['marathon','semi'].includes(format) ? 'marathon' : 'k10';
+  const pool = INTERVAL_POOLS[poolKey];
+  const useDebut = phaseName === 'Base' || phaseName === 'Affûtage';
+  const subPool = useDebut ? pool.debut : pool.solide;
+  const w = subPool[weekIdxInPhase % subPool.length];
+
+  const distLabel = w.distKm >= 1 ? `${w.distKm}km` : `${Math.round(w.distKm * 1000)}m`;
+  const label = `${w.reps}×${distLabel}`;
+
+  const paceStr = racePaceSec > 0 ? getPaceLabel(w.zone, racePaceSec) + '/km' : w.zone;
+  const recovDesc = w.recov.km ? `récup ${w.recov.km}km EF` : `récup ${w.recov.sec}s`;
+
+  const desc = `Échauffement : 2km Z1-Z2\nSet : ${w.reps}×${distLabel} · ${paceStr} · ${recovDesc}\nRetour au calme : 1,5km Z1`;
+  const dur = calcIntervalDur(w, racePaceSec);
+
+  return { l: label, t: 'Fractionné', z: w.zone, dur, desc };
+}
+
 function getSessionKit(sport, ev, phaseName) {
   const format = ev.format || 'marathon';
   const isShortCap = ['k5','k10'].includes(format);
@@ -2850,6 +2929,12 @@ function buildSmartWeek(sport, ev, weekIdx, totalWeeks, availDays, targetMin, mo
   }
 
   const kit = getSessionKit(sport, ev, phase.name);
+  // CAP : remplace la séance HI générique par un intervalle structuré
+  if (sport === 'cap' && phase.name !== 'Race week 🏁') {
+    const racePaceSec = parseInt(ev.racePace) || 0;
+    const weekInPhase = getPhaseWeekIdx(weekIdx, totalWeeks);
+    kit.hi = buildIntervalSession(ev.format || 'marathon', phase.name, weekInPhase, racePaceSec);
+  }
   const used = [];
   const hiDay   = findClosestAvail(2, availIndices, used); if (hiDay!==null) used.push(hiDay);
   const longDay = findClosestAvail(5, availIndices, used); if (longDay!==null) used.push(longDay);
@@ -2869,7 +2954,7 @@ function buildSmartWeek(sport, ev, weekIdx, totalWeeks, availDays, targetMin, mo
 
   const days = dayNames.map((n,i) => {
     if (!availDays[i]) return mkRest(n);
-    if (i===hiDay)  return mkSess(n, {...kit.hi,  dur:hiDur});
+    if (i===hiDay)  return mkSess(n, {...kit.hi,  dur: kit.hi.dur > 0 ? kit.hi.dur : hiDur});
     if (i===hi2Day) return mkSess(n, {...kit.hi2, dur:hiDur});
     if (i===longDay) {
       if (sport==='tri') {
