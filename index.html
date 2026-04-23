@@ -2802,8 +2802,13 @@ function confirmGeneratePlan() { showGenConfirm(); }
 
 // ── PLAN GENERATION ────────────────────────────────────────────────────────
 function getPhaseForWeek(idx, total) {
-  const pct = total <= 1 ? 1 : idx / (total - 1);
-  return PHASE_DEFS.find(p => pct >= p.from && pct < p.to) || PHASE_DEFS[PHASE_DEFS.length - 1];
+  // The very last week is always Race week 🏁, no matter the plan length
+  const raceWeekDef = PHASE_DEFS[PHASE_DEFS.length - 1];
+  if (idx >= total - 1) return raceWeekDef;
+  // All other weeks are distributed across the non-Race-week phases
+  const nonRaceDefs = PHASE_DEFS.slice(0, -1);
+  const pct = total <= 2 ? 0 : idx / (total - 2);
+  return nonRaceDefs.find(p => pct >= p.from && pct < p.to) || nonRaceDefs[nonRaceDefs.length - 1];
 }
 // ── SMART PLAN GENERATION ──────────────────────────────────────────────────
 const DECHARGE_PHASE = {name:'Décharge', c:'#7A9FAF', b:'rgba(122,159,175,0.12)'};
