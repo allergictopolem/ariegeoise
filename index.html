@@ -1214,11 +1214,29 @@
   }
   .strava-sync-btn:hover { background: rgba(252,76,2,0.14); }
   .strava-sync-btn.connected { border-color: rgba(252,76,2,0.55); background: rgba(252,76,2,0.1); }
-  .day-gauge-track {
-    height: 3px;
-    background: rgba(0,0,0,0.12);
-    border-radius: 2px;
+  .day-gauge-wrap {
+    display: flex;
+    align-items: center;
+    gap: 3px;
     margin-top: 3px;
+  }
+  .day-gauge-track {
+    flex: 1;
+    height: 3px;
+    border-radius: 2px;
+    display: flex;
+    gap: 1px;
+  }
+  .day-gauge-base {
+    flex: 4;
+    background: rgba(0,0,0,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .day-gauge-bonus {
+    flex: 1;
+    background: rgba(45,122,79,0.12);
+    border-radius: 2px;
     overflow: hidden;
   }
   .day-gauge-fill {
@@ -1227,7 +1245,21 @@
     border-radius: 2px;
     transition: width 0.35s;
   }
-  .day-gauge-fill.over { background: #FC4C02; }
+  .day-gauge-fill-bonus {
+    height: 100%;
+    background: var(--green);
+    opacity: 0.65;
+    border-radius: 2px;
+    transition: width 0.35s;
+  }
+  .day-gauge-pct {
+    font-family: var(--font-mono);
+    font-size: 7px;
+    color: var(--ink3);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .day-gauge-pct.over { color: var(--green); font-weight: 700; }
   .day-pill.strava-diff { outline: 1.5px solid #FC4C02; outline-offset: 1px; }
   .strava-pill {
     width: 100%;
@@ -2313,9 +2345,20 @@ function renderWeeks() {
         const isMissed = s.missed || isAutoPast;
         let gaugeHtml = '';
         if (sv?.case==='A' && s.dur>0) {
-          const actualMin=Math.round((sv.act.moving_time||0)/60);
-          const pct=Math.min(200,Math.round(actualMin/s.dur*100));
-          gaugeHtml=`<div class="day-gauge-track"><div class="day-gauge-fill${pct>100?' over':''}" style="width:${Math.min(100,pct)}%"></div></div>`;
+          const actualMin = Math.round((sv.act.moving_time||0)/60);
+          const pct = Math.round(actualMin / s.dur * 100);
+          const isOver = pct > 100;
+          const baseFill = Math.min(100, pct);
+          // Bonus zone represents up to 50% extra (150% → full bonus bar)
+          const bonusFill = isOver ? Math.min(100, (pct - 100) * 2) : 0;
+          const bonusSection = `<div class="day-gauge-bonus"><div class="day-gauge-fill-bonus" style="width:${bonusFill}%"></div></div>`;
+          gaugeHtml = `<div class="day-gauge-wrap">
+            <div class="day-gauge-track">
+              <div class="day-gauge-base"><div class="day-gauge-fill" style="width:${baseFill}%"></div></div>
+              ${bonusSection}
+            </div>
+            <span class="day-gauge-pct${isOver?' over':''}">${pct}%</span>
+          </div>`;
         }
         let stravaExtra='';
         if (sv?.case==='B'||sv?.case==='C') { const sh=stravaShortStats(sv.act); stravaExtra=`<div class="strava-pill" title="${stravaStats(sv.act)}">🟠 ${sh}</div>`; }
