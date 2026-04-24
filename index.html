@@ -184,6 +184,54 @@
   }
   .nutri-toggle-btn:hover { opacity: 1; }
   body.nutri-hints-off .day-pill:not(.unplanned) .day-nutri { visibility: hidden; }
+
+  /* SUGGESTION BANNER */
+  .sugg-banner {
+    border-top: 1px solid rgba(192,123,24,0.2);
+    background: rgba(192,123,24,0.05);
+    padding: 6px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sugg-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 11px;
+  }
+  .sugg-label {
+    color: var(--ink2);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    margin-right: 2px;
+  }
+  .sugg-label strong { color: var(--ink); }
+  .sugg-slot-btn {
+    padding: 2px 8px;
+    border: 1px solid rgba(192,123,24,0.5);
+    border-radius: 3px;
+    background: rgba(192,123,24,0.08);
+    color: #C07B18;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .sugg-slot-btn:hover { background: rgba(192,123,24,0.18); }
+  .sugg-dismiss-btn {
+    padding: 2px 6px;
+    border: none;
+    background: none;
+    color: var(--ink3);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    cursor: pointer;
+    opacity: 0.6;
+    margin-left: 2px;
+  }
+  .sugg-dismiss-btn:hover { opacity: 1; }
   .nutri-toggle-off-slash {
     position: absolute;
     top: 50%; left: 50%;
@@ -1889,6 +1937,7 @@ function makeDefaultConfig() {
     constraints: { days:[true,true,true,true,true,true,true], weeklyVolume:10 },
     nutrition: {...DEFAULT_NUTRITION},
     showNutriHints: true,
+    dismissedSuggestions: [],
     strava: { clientId:'', clientSecret:'', refreshToken:'', accessToken:'', tokenExpiry:0, lastSync:0 }
   };
 }
@@ -1923,6 +1972,7 @@ function initState() {
       if (!p.config.nutrition)         p.config.nutrition = {...DEFAULT_NUTRITION};
       if (!p.config.strava)            p.config.strava = { clientId:'', clientSecret:'', refreshToken:'', accessToken:'', tokenExpiry:0, lastSync:0 };
       if (p.config.showNutriHints === undefined) p.config.showNutriHints = true;
+      if (!p.config.dismissedSuggestions) p.config.dismissedSuggestions = [];
       return p;
     }
   } catch(e) {}
@@ -2324,6 +2374,7 @@ function renderWeeks() {
         </div>
         <div class="week-days">${daysHtml}</div>
       </div>
+      ${renderSuggestionBanner(wi)}
       <div class="week-note" onclick="startEditNote(${wi}, this)">${w.note}</div>`;
     container.appendChild(div);
   });
@@ -2876,6 +2927,7 @@ function doGeneratePlan() {
   state.config.startDate   = startISO;
   state.config.endDate     = endISO;
   state.weeks = generateTemplatePlan(ev.sport, constraints, startISO, endISO);
+  state.config.dismissedSuggestions = []; // reset suggestions on new plan
   const isFirstPlan = !getUI().hasPlan;
   setUI({ hasPlan: true });
   hideGenConfirm();
@@ -3356,6 +3408,95 @@ async function stravaRefreshTokenIfNeeded() {
   state.config.strava.refreshToken = data.refresh_token;
   state.config.strava.tokenExpiry  = data.expires_at * 1000;
   saveState();
+}
+
+// ── SUGGESTIONS ────────────────────────────────────────────────────────────
+const DAY_LABELS_SHORT = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+function suggestionId(wi, di, si) { return `${wi}-${di}-${si}`; }
+
+function findSlots(wi, di) {
+  const slots = [];
+  // Same week: days after di
+  for (let d = di + 1; d < 7 && slots.length < 3; d++) {
+    const day = state.weeks[wi]?.days[d];
+    if (!day) continue;
+    if ((day.sessions||[]).filter(s=>!s.unplanned).length < 3)
+      slots.push({ wi, di: d, label: DAY_LABELS_SHORT[d] });
+  }
+  // Next week: if exists and still need slots
+  const nwi = wi + 1;
+  if (nwi < state.weeks.length) {
+    for (let d = 0; d < 7 && slots.length < 3; d++) {
+      const day = state.weeks[nwi]?.days[d];
+      if (!day) continue;
+      if ((day.sessions||[]).filter(s=>!s.unplanned).length < 3)
+        slots.push({ wi: nwi, di: d, label: DAY_LABELS_SHORT[d] + ' +1' });
+    }
+  }
+  return slots.slice(0, 3);
+}
+
+function getWeekSuggestions(wi) {
+  const todayISO = new Date().toISOString().split('T')[0];
+  const dismissed = new Set(state.config.dismissedSuggestions || []);
+  const suggestions = [];
+  const week = state.weeks[wi];
+  if (!week) return [];
+  week.days.forEach((day, di) => {
+    const dateISO = getDayDate(wi, di);
+    if (!dateISO || dateISO >= todayISO) return;
+    // Only last 14 days
+    const ageDays = Math.round((new Date(todayISO+'T12:00:00') - new Date(dateISO+'T12:00:00')) / 86400000);
+    if (ageDays > 14) return;
+    (day.sessions||[]).forEach((s, si) => {
+      if (s.done || s.unplanned) return;
+      const id = suggestionId(wi, di, si);
+      if (dismissed.has(id)) return;
+      const slots = findSlots(wi, di);
+      if (slots.length === 0) return;
+      suggestions.push({ wi, di, si, s, slots, id });
+    });
+  });
+  return suggestions;
+}
+
+function dismissSuggestion(wi, di, si) {
+  if (!state.config.dismissedSuggestions) state.config.dismissedSuggestions = [];
+  const id = suggestionId(wi, di, si);
+  if (!state.config.dismissedSuggestions.includes(id))
+    state.config.dismissedSuggestions.push(id);
+  saveState(); render();
+}
+
+function moveMissedSession(wi, di, si, targetWi, targetDi) {
+  const s = state.weeks[wi].days[di].sessions[si];
+  // Mark original as explicitly missed (in case it was just auto-grey)
+  s.missed = true;
+  // Copy to target day
+  const col = sessionColor(s.t, s.z);
+  state.weeks[targetWi].days[targetDi].sessions.push({
+    l:s.l, t:s.t, dur:s.dur, z:s.z, c:col.c, b:col.b,
+    done:false, missed:false, desc:s.desc||'', strava:null, unplanned:false
+  });
+  // Dismiss suggestion
+  dismissSuggestion(wi, di, si);
+}
+
+function renderSuggestionBanner(wi) {
+  const suggestions = getWeekSuggestions(wi);
+  if (!suggestions.length) return '';
+  const rows = suggestions.map(({ wi:swi, di, si, s, slots }) => {
+    const slotBtns = slots.map(sl =>
+      `<button class="sugg-slot-btn" onclick="moveMissedSession(${swi},${di},${si},${sl.wi},${sl.di})">${sl.label}</button>`
+    ).join('');
+    return `<div class="sugg-row">
+      <span class="sugg-label">💡 <strong>${s.l}</strong> manqué (${DAY_LABELS_SHORT[di]}) →</span>
+      ${slotBtns}
+      <button class="sugg-dismiss-btn" onclick="dismissSuggestion(${swi},${di},${si})">Ignorer</button>
+    </div>`;
+  }).join('');
+  return `<div class="sugg-banner">${rows}</div>`;
 }
 
 function getCurrentWeekIdx() {
