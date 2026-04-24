@@ -1912,6 +1912,12 @@ function formatDur(min) {
 function sumDurDays(days) {
   return days.reduce((a,d) => a + (d.sessions||[]).reduce((sa,s) => sa + (s.dur||0), 0), 0);
 }
+// Actual duration for a done session: Strava moving_time if available, else planned dur
+function getActualDur(s) {
+  if (s.done && s.strava?.case === 'A' && s.strava.act?.moving_time)
+    return Math.round(s.strava.act.moving_time / 60);
+  return s.dur || 0;
+}
 
 function calcLoad(dur, zone) {
   const h = dur/60, total = Math.round(h*(LOAD_FACTORS[zone]||0));
@@ -2244,7 +2250,7 @@ function renderGlobalStats() {
     (d.sessions||[]).forEach(s => {
       totalMin += s.dur||0;
       if (s.dur>0) totalCount++;
-      if (s.done) { doneMin += s.dur||0; if (s.dur>0) doneCount++; }
+      if (s.done) { doneMin += getActualDur(s); if (s.dur>0) doneCount++; }
     });
   }));
   const pct = totalMin > 0 ? Math.round(doneMin / totalMin * 100) : 0;
