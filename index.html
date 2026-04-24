@@ -168,6 +168,31 @@
     background: rgba(255,255,255,0.08);
     margin: 4px 0;
   }
+  .nutri-toggle-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 2px 4px;
+    opacity: 0.9;
+    transition: opacity 0.15s;
+    line-height: 1;
+  }
+  .nutri-toggle-btn:hover { opacity: 1; }
+  .nutri-toggle-off-slash {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-45deg);
+    width: 2px;
+    height: 130%;
+    background: rgba(255,255,255,0.85);
+    border-radius: 1px;
+    pointer-events: none;
+  }
 
   /* MAIN */
   .main { padding: 2rem 2.5rem 4rem; max-width: 1200px; margin: 0 auto; }
@@ -1841,6 +1866,7 @@ function makeDefaultConfig() {
     event: { name:'', sport:'velo' },
     constraints: { days:[true,true,true,true,true,true,true], weeklyVolume:10 },
     nutrition: {...DEFAULT_NUTRITION},
+    showNutriHints: true,
     strava: { clientId:'', clientSecret:'', refreshToken:'', accessToken:'', tokenExpiry:0, lastSync:0 }
   };
 }
@@ -1873,6 +1899,7 @@ function initState() {
       if (!p.config.constraints)       p.config.constraints = { days:[true,true,true,true,true,true,true], weeklyVolume:10 };
       if (!p.config.nutrition)         p.config.nutrition = {...DEFAULT_NUTRITION};
       if (!p.config.strava)            p.config.strava = { clientId:'', clientSecret:'', refreshToken:'', accessToken:'', tokenExpiry:0, lastSync:0 };
+      if (p.config.showNutriHints === undefined) p.config.showNutriHints = true;
       return p;
     }
   } catch(e) {}
@@ -2069,9 +2096,16 @@ function renderMasthead() {
   if (footerEl) footerEl.textContent = ev.name ? `${ev.name} · ${state.weeks.length} semaines` : '';
   const statsEl = document.getElementById('mh-stats');
   if (!statsEl) return;
+  const on = state.config.showNutriHints !== false;
   statsEl.innerHTML = getEventStats(ev).map((s,i) =>
     `${i>0?'<div class="mstat-divider"></div>':''}<div class="mstat"><div class="mstat-val">${s.val}</div><div class="mstat-label">${s.label}</div></div>`
-  ).join('');
+  ).join('') + `<div class="mstat-divider"></div><button class="nutri-toggle-btn" onclick="toggleNutriHints()" title="${on ? 'Masquer les conseils nutrition' : 'Afficher les conseils nutrition'}">🍌${on ? '' : '<span class="nutri-toggle-off-slash"></span>'}</button>`;
+}
+
+function toggleNutriHints() {
+  state.config.showNutriHints = !(state.config.showNutriHints !== false);
+  saveState();
+  render();
 }
 
 function renderCalendarConfig() {
@@ -2180,7 +2214,7 @@ function renderWeeks() {
         const tl = (s.t!=='Repos'&&s.t!=='Voyage') ? `<span class="day-type">${s.t}</span>` : '';
         const pace = (_isCap && _racePace > 0 && s.z !== 'Repos') ? getPaceLabel(s.z, _racePace) : null;
         const paceHtml = pace ? `<span class="day-pace">${pace}</span>` : '';
-        const nutri = getNutriHint(s.z, s.dur);
+        const nutri = (state.config.showNutriHints !== false) ? getNutriHint(s.z, s.dur) : null;
         const nutriHtml = nutri ? `<span class="day-nutri">${nutri}</span>` : '';
         const sv = s.strava;
         const diffClass = sv?.case==='D' ? ' strava-diff' : '';
