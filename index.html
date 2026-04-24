@@ -2408,7 +2408,11 @@ function renderWeeks() {
           ${isCurrent ? '<span class="week-current-badge">Cette semaine</span>' : ''}
           <div class="week-phase" style="color:${w.pc};background:${w.pb}"
                onclick="event.stopPropagation();openPhaseDropdown(${wi},this)">${w.phase} ▾</div>
-          <div class="week-volume">${formatDur(sumDurDays(w.days))}</div>
+          <div class="week-volume">${(()=>{
+            const planned = sumDurDays(w.days);
+            const actual = w.days.reduce((a,d)=>a+(d.sessions||[]).reduce((sa,s)=>sa+(s.done?getActualDur(s):0),0),0);
+            return actual > 0 ? `<span style="color:var(--ink)">${formatDur(actual)}</span><span style="opacity:0.45">/${formatDur(planned)}</span>` : formatDur(planned);
+          })()}</div>
           <div class="week-load">
             <div class="wl-header">
               <span class="wl-label">Charge</span>
