@@ -1974,9 +1974,15 @@ function onPanelDragEnd(e) { e.currentTarget.classList.remove('dragging'); }
 function toggleSessionDone(e, wi, di, si) {
   e.stopPropagation();
   const s = state.weeks[wi].days[di].sessions[si];
-  if (!s.done && !s.missed) { s.done = true;  s.missed = false; }  // → ✓
-  else if (s.done)          { s.done = false; s.missed = true;  }  // → ✗
-  else                      { s.done = false; s.missed = false; }  // → défaut
+  if (s.strava) {
+    // Session Strava : 2 états seulement (✓ ↔ ✗), pas d'état "défaut" intermédiaire
+    if (s.done) { s.done = false; s.missed = true;  }
+    else        { s.done = true;  s.missed = false; }
+  } else {
+    if (!s.done && !s.missed) { s.done = true;  s.missed = false; }  // → ✓
+    else if (s.done)          { s.done = false; s.missed = true;  }  // → ✗
+    else                      { s.done = false; s.missed = false; }  // → défaut
+  }
   saveState(); render();
 }
 
