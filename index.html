@@ -183,6 +183,7 @@
     line-height: 1;
   }
   .nutri-toggle-btn:hover { opacity: 1; }
+  body.nutri-hints-off .day-pill:not(.unplanned) .day-nutri { visibility: hidden; }
   .nutri-toggle-off-slash {
     position: absolute;
     top: 50%; left: 50%;
@@ -2105,7 +2106,12 @@ function renderMasthead() {
 function toggleNutriHints() {
   state.config.showNutriHints = !(state.config.showNutriHints !== false);
   saveState();
-  render();
+  applyNutriHintsClass();
+  renderMasthead();
+}
+
+function applyNutriHintsClass() {
+  document.body.classList.toggle('nutri-hints-off', state.config.showNutriHints === false);
 }
 
 function renderCalendarConfig() {
@@ -2214,7 +2220,7 @@ function renderWeeks() {
         const tl = (s.t!=='Repos'&&s.t!=='Voyage') ? `<span class="day-type">${s.t}</span>` : '';
         const pace = (_isCap && _racePace > 0 && s.z !== 'Repos') ? getPaceLabel(s.z, _racePace) : null;
         const paceHtml = pace ? `<span class="day-pace">${pace}</span>` : '';
-        const nutri = (state.config.showNutriHints !== false) ? getNutriHint(s.z, s.dur) : null;
+        const nutri = getNutriHint(s.z, s.dur);
         const nutriHtml = nutri ? `<span class="day-nutri">${nutri}</span>` : '';
         const sv = s.strava;
         const diffClass = sv?.case==='D' ? ' strava-diff' : '';
@@ -3614,6 +3620,7 @@ function endTour() {
 
 async function main() {
   await stravaHandleCallback();
+  applyNutriHintsClass();
   render();
   const st = state.config.strava;
   if (st?.refreshToken && Date.now() - (st.lastSync||0) > 8 * 3600 * 1000) {
